@@ -1,18 +1,25 @@
 package com.backend.devfordev.service.CommunityService;
 
 import com.backend.devfordev.domain.enums.CommunityCategory;
-import com.backend.devfordev.dto.CommunityDto.CommunityCommentRequest;
-import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import com.backend.devfordev.dto.CommunityDto.CommunityRequest;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Streamable;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface CommunityService {
     public CommunityResponse.CommunityCreateResponse createCommunity(CommunityRequest.CommunityCreateRequest request, Long userId);
-    public List<CommunityResponse.CommunityListResponse> getCommunityList(Optional<CommunityCategory> categoryOpt,  Optional<String> searchTermOpt, String sortBy);
-
+    //public List<CommunityResponse.CommunityListResponse> getCommunityList(Optional<CommunityCategory> categoryOpt,  Optional<String> searchTermOpt, String sortBy);
+    public CustomPageResponse<CommunityResponse.CommunityListResponse> getCommunityList(
+            Optional<CommunityCategory> categoryOpt,
+            Optional<String> searchTermOpt,
+            String sortBy,
+            Pageable pageable
+    );
     public CommunityResponse.CommunityDetailResponse getCommunityDetail(Long id);
     public List<CommunityResponse.CommunityTop5Response> getTop5UsersByTotalLikes();
 

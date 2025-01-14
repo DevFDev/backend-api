@@ -2,15 +2,32 @@ package com.backend.devfordev.repository.CommunityRepository;
 
 import com.backend.devfordev.domain.CommunityEntity.Community;
 import com.backend.devfordev.domain.enums.CommunityCategory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface CommunityRepository extends JpaRepository<Community, Long> {
-    List<Community> findByCommunityCategory(CommunityCategory category);
+    //List<Community> findByCommunityCategory(CommunityCategory category);
+    Page<Community> findByCommunityCategory(CommunityCategory category, Pageable pageable);
+
+    @Query("SELECT c FROM Community c " +
+            "JOIN c.member m " +
+            "WHERE (:category IS NULL OR c.communityCategory = :category) " +
+            "AND (:searchTerm IS NULL OR " +
+            "LOWER(c.communityTitle) LIKE %:searchTerm% OR " +
+            "LOWER(c.communityContent) LIKE %:searchTerm% OR " +
+            "LOWER(m.name) LIKE %:searchTerm%)")
+    Page<Community> findByCategoryAndSearchTerm(
+            @Param("category") CommunityCategory category,
+            @Param("searchTerm") String searchTerm,
+            Pageable pageable);
+
 
 
     @Query("SELECT c, (SELECT COUNT(h) FROM Heart h WHERE h.likeId = c.id AND h.likeType = 'COMMUNITY') as likeCount " +

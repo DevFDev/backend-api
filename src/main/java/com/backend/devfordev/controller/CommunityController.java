@@ -7,6 +7,7 @@ import com.backend.devfordev.dto.CommunityDto.CommunityCommentRequest;
 import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import com.backend.devfordev.dto.CommunityDto.CommunityRequest;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.service.CommunityService.CommunityCommentService;
 import com.backend.devfordev.service.CommunityService.CommunityService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,23 +47,27 @@ public class CommunityController {
 
 
     @Operation(summary = "커뮤니티 글 전체 조회", description = "커뮤니티 전체 글 조회 api입니다. 검색, 필터링, 정렬 적용.")
-    @GetMapping(value = "/v1/community")
-    public ResponseEntity<ApiResponse<List<CommunityResponse.CommunityListResponse>>> getCommunityList(
+    @GetMapping("/v1/community")
+    public ResponseEntity<ApiResponse<CustomPageResponse<CommunityResponse.CommunityListResponse>>> getCommunityList(
             @RequestParam(required = false) CommunityCategory category,
             @RequestParam(required = false) String searchTerm,
-            @RequestParam(required = false, defaultValue = "recent") String sortBy
-            ) {
-        // 카테고리가 있을 경우 서비스에 Optional로 전달
-        List<CommunityResponse.CommunityListResponse> communityList = communityService.getCommunityList(
+            @RequestParam(defaultValue = "recent") String sortBy,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        CustomPageResponse<CommunityResponse.CommunityListResponse> communityList = communityService.getCommunityList(
                 Optional.ofNullable(category),
                 Optional.ofNullable(searchTerm),
-                sortBy);
+                sortBy,
+                pageable
+        );
 
-        ApiResponse<List<CommunityResponse.CommunityListResponse>> apiResponse = ApiResponse.onSuccess(communityList);
-
+        ApiResponse<CustomPageResponse<CommunityResponse.CommunityListResponse>> apiResponse = ApiResponse.onSuccess(communityList);
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
-
     }
+
+
 
 
     @Operation(summary = "커뮤니티 글 상세 조회", description = "커뮤니티의 각 글을 상세 조회하는 api입니다.")

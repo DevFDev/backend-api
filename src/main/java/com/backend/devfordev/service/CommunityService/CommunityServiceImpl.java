@@ -5,24 +5,24 @@ import com.backend.devfordev.apiPayload.exception.handler.CommunityHandler;
 import com.backend.devfordev.apiPayload.exception.handler.MemberHandler;
 import com.backend.devfordev.converter.CommunityConverter;
 import com.backend.devfordev.domain.CommunityEntity.Community;
-import com.backend.devfordev.domain.CommunityEntity.CommunityComment;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.enums.CommunityCategory;
-import com.backend.devfordev.dto.CommunityDto.CommunityCommentRequest;
-import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
+import com.backend.devfordev.domain.enums.LikeType;
 import com.backend.devfordev.dto.CommunityDto.CommunityRequest;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.repository.*;
 import com.backend.devfordev.repository.CommunityRepository.CommunityCommentRepository;
 import com.backend.devfordev.repository.CommunityRepository.CommunityRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
+import org.springframework.data.util.Streamable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -85,71 +85,79 @@ public class CommunityServiceImpl implements CommunityService{
      }
 
 
+    @Transactional(readOnly = true)
+    public CustomPageResponse<CommunityResponse.CommunityListResponse> getCommunityList(
+            Optional<CommunityCategory> categoryOpt,
+            Optional<String> searchTermOpt,
+            String sortBy,
+            Pageable pageable
+    ) {
+        // 카테고리와 검색어 기본값 설정
+        CommunityCategory category = categoryOpt.orElse(null);
+        String searchTerm = searchTermOpt.orElse(null);
 
-    @Override
-    @Transactional
-    public List<CommunityResponse.CommunityListResponse> getCommunityList(Optional<CommunityCategory> categoryOpt, Optional<String> searchTermOpt, String sortBy) {
-        // 커뮤니티와 좋아요 수를 한 번의 쿼리로 가져옴
-        List<Object[]> results = communityRepository.findAllWithLikesAndMember();
+        // 데이터 조회
+        Page<Community> communities = communityRepository.findByCategoryAndSearchTerm(
+                category,
+                searchTerm,
+                pageable
+        );
 
-        // 필터링 및 DTO 변환
-        List<CommunityResponse.CommunityListResponse> communityList = results.stream()
-                .map(result -> {
-                    Community community = (Community) result[0];  // 첫 번째는 Community 객체
-                    Long likeCount = (Long) result[1];            // 두 번째는 좋아요 수
+        // 데이터 변환
+        List<CommunityResponse.CommunityListResponse> communityList = communities.stream()
+                .map(community -> {
+                    Long likeCount = likeRepository.countByLikeIdAndLikeType(community.getId(), LikeType.COMMUNITY);
+                    CommunityResponse.MemberInfo memberInfo = getMemberInfo(community);
 
-                    // 카테고리 필터링
-                    if (categoryOpt.isPresent() && !community.getCommunityCategory().equals(categoryOpt.get())) {
-                        return null;
-                    }
-
-                    // 검색 필터링: 제목, 작성자 이름, 내용 중 하나라도 일치하면 true 반환
-                    if (searchTermOpt.isPresent()) {
-                        String searchTerm = searchTermOpt.get().toLowerCase();
-                        boolean matches = community.getCommunityTitle().toLowerCase().contains(searchTerm) ||
-                                community.getMember().getName().toLowerCase().contains(searchTerm) ||
-                                community.getCommunityContent().toLowerCase().contains(searchTerm);
-                        if (!matches) {
-                            return null;
-                        }
-                    }
-                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(community.getMember());
-
-                    // MemberInfo 생성
-                    CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
-                            community.getMember().getId(),
-                            memberInfoEntity.getImageUrl(),
-                            memberInfoEntity.getNickname()
-                    );
-
-                    // communityContent를 80자까지만 잘라서 보여줌
+                    // 내용 80자 제한
                     String shortenedContent = community.getCommunityContent();
                     if (shortenedContent.length() > 80) {
-                        shortenedContent = shortenedContent.substring(0, 80) + "...";  // 80자까지만 자르고 "..." 추가
+                        shortenedContent = shortenedContent.substring(0, 80) + "...";
                     }
 
-                    // DTO 변환
                     return CommunityConverter.toCommunityListResponse(community, memberInfo, likeCount, shortenedContent);
                 })
-                .filter(Objects::nonNull)  // 필터링에서 null이 반환된 경우 제거
                 .collect(Collectors.toList());
 
-        // 정렬 기준에 따른 정렬
-        switch (sortBy.toLowerCase()) {
-            case "likes":   // 좋아요 순 정렬
-                communityList.sort(Comparator.comparingLong(CommunityResponse.CommunityListResponse::getLikes).reversed());
-                break;
-            case "views":   // 조회수 순 정렬
-                communityList.sort(Comparator.comparingLong(CommunityResponse.CommunityListResponse::getViews).reversed());
-                break;
-            case "recent":  // 최신순 정렬 (기본)
-            default:
-                communityList.sort(Comparator.comparing(CommunityResponse.CommunityListResponse::getCreatedAt).reversed());
-                break;
-        }
+        // 정렬 적용
+        communityList.sort((o1, o2) -> {
+            switch (sortBy.toLowerCase()) {
+                case "likes":
+                    return Long.compare(o2.getLikes(), o1.getLikes());
+                case "views":
+                    return Long.compare(o2.getViews(), o1.getViews());
+                case "recent":
+                default:
+                    return o2.getCreatedAt().compareTo(o1.getCreatedAt());
+            }
+        });
 
-        return communityList;
+        // CustomPageResponse로 반환
+        return new CustomPageResponse<>(
+                communityList,
+                communities.getTotalPages(),
+                communities.getTotalElements(),
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                communities.isFirst(),
+                communities.isLast()
+        );
     }
+
+
+
+    // MemberInfo 생성 로직 분리
+    private CommunityResponse.MemberInfo getMemberInfo(Community community) {
+        MemberInfo memberInfoEntity = memberInfoRepository.findByMember(community.getMember());
+        return new CommunityResponse.MemberInfo(
+                community.getMember().getId(),
+                memberInfoEntity.getImageUrl(),
+                memberInfoEntity.getNickname()
+        );
+    }
+
+
+
 
     @Override
     @Transactional
