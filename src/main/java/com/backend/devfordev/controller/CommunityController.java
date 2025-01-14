@@ -52,10 +52,11 @@ public class CommunityController {
             @RequestParam(required = false) CommunityCategory category,
             @RequestParam(required = false) String searchTerm,
             @RequestParam(defaultValue = "recent") String sortBy,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page-1, size);
+
         CustomPageResponse<CommunityResponse.CommunityListResponse> communityList = communityService.getCommunityList(
                 Optional.ofNullable(category),
                 Optional.ofNullable(searchTerm),

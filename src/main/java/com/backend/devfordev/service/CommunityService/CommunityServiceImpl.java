@@ -92,15 +92,20 @@ public class CommunityServiceImpl implements CommunityService{
             String sortBy,
             Pageable pageable
     ) {
-        // 카테고리와 검색어 기본값 설정
-        CommunityCategory category = categoryOpt.orElse(null);
-        String searchTerm = searchTermOpt.orElse(null);
+        // 동적으로 정렬된 Pageable 생성
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC,
+                        sortBy.equalsIgnoreCase("views") ? "communityViews" :
+                                sortBy.equalsIgnoreCase("likes") ? "likes" : "createdAt")
+        );
 
         // 데이터 조회
         Page<Community> communities = communityRepository.findByCategoryAndSearchTerm(
-                category,
-                searchTerm,
-                pageable
+                categoryOpt.orElse(null),
+                searchTermOpt.orElse(null),
+                sortedPageable
         );
 
         // 데이터 변환
@@ -119,19 +124,6 @@ public class CommunityServiceImpl implements CommunityService{
                 })
                 .collect(Collectors.toList());
 
-        // 정렬 적용
-        communityList.sort((o1, o2) -> {
-            switch (sortBy.toLowerCase()) {
-                case "likes":
-                    return Long.compare(o2.getLikes(), o1.getLikes());
-                case "views":
-                    return Long.compare(o2.getViews(), o1.getViews());
-                case "recent":
-                default:
-                    return o2.getCreatedAt().compareTo(o1.getCreatedAt());
-            }
-        });
-
         // CustomPageResponse로 반환
         return new CustomPageResponse<>(
                 communityList,
@@ -143,7 +135,6 @@ public class CommunityServiceImpl implements CommunityService{
                 communities.isLast()
         );
     }
-
 
 
     // MemberInfo 생성 로직 분리
