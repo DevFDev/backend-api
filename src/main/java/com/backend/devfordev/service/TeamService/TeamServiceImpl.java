@@ -8,8 +8,10 @@ import com.backend.devfordev.converter.TeamConverter;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.TeamEntity.*;
+import com.backend.devfordev.domain.enums.LikeType;
 import com.backend.devfordev.domain.enums.TeamType;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.dto.TeamDto.TeamRequest;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
 import com.backend.devfordev.repository.*;
@@ -17,6 +19,10 @@ import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.TeamRepository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,92 +98,87 @@ public class TeamServiceImpl implements TeamService {
     }
 
 
-    @Override
-    @Transactional
-    public List<TeamResponse.TeamListResponse> getTeamList(Optional<String> searchTermOpt, Optional<TeamType> teamTypeOpt, List<String> positions, List<String> techStacks, String sortBy, Optional<Boolean> teamIsActive) {
+    @Transactional(readOnly = true)
+    public CustomPageResponse<TeamResponse.TeamListResponse> getTeamList(
+            Optional<String> searchTermOpt,
+            Optional<TeamType> teamTypeOpt,
+            List<String> positions,
+            List<String> techStacks,
+            String sortBy,
+            Optional<Boolean> teamIsActive,
+            Pageable pageable
+    ) {
+        // 동적으로 정렬된 Pageable 생성
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC,
+                        sortBy.equalsIgnoreCase("likes") ? "likes" :
+                                sortBy.equalsIgnoreCase("views") ? "teamViews" : "createdAt")
+        );
 
-        List<Object[]> results = teamRepository.findAllWithLikesAndMember();
+        // 팀 데이터 조회
+        Page<Team> teams = teamRepository.findByFilters(
+                teamTypeOpt.orElse(null),
+                searchTermOpt.orElse(null),
+                teamIsActive.orElse(null),
+                positions.isEmpty() ? null : positions,
+                techStacks.isEmpty() ? null : techStacks,
+                sortedPageable
+        );
 
-        List<TeamResponse.TeamListResponse> teamList = results.stream()
-                .map(result -> {
-                    Team team = (Team) result[0];
-                    Long likeCount = (Long) result[1];
+        // 좋아요 수 조회
+        List<Long> teamIds = teams.stream().map(Team::getId).collect(Collectors.toList());
+        Map<Long, Long> likeCounts = likeRepository.countLikesByTeamIds(teamIds, LikeType.TEAM);
 
+        // 데이터 변환
+        List<TeamResponse.TeamListResponse> teamList = teams.stream()
+                .map(team -> {
+                    Long likeCount = likeCounts.getOrDefault(team.getId(), 0L);
 
-                    // 모집 여부 필터링
-                    if (teamIsActive.isPresent()) {
-                        boolean isRecruiting = teamIsActive.get();
-                        if ((isRecruiting && !team.getTeamIsActive()) ||
-                                (!isRecruiting && team.getTeamIsActive())) {
-                            return null;
-                        }
-                    }
+                    // MemberInfo 생성 로직을 getMemberInfo 메서드로 분리
+                    CommunityResponse.MemberInfo memberInfo = getMemberInfo(team);
 
-                    if (teamTypeOpt.isPresent() && !team.getTeamType().equals(teamTypeOpt.get())) {
-                        return null;
-                    }
-
-
-                    // `teamPosition` filter
-                    if (!positions.isEmpty() && positions.stream().noneMatch(pos -> team.getTeamPosition().contains(pos))) {
-                        return null;
-                    }
-
-                    // `teamTechStack` filter
-                    List<String> teamStackNames = team.getTeamTechStacks().stream()
+                    // 기술 스택 및 태그 추출
+                    List<String> techStackNames = team.getTeamTechStacks().stream()
                             .map(TeamTechStack::getName)
                             .collect(Collectors.toList());
-                    if (!techStacks.isEmpty() && techStacks.stream().noneMatch(teamStackNames::contains)) {
-                        return null;
-                    }
+                    List<String> tagNames = team.getTeamTagMaps().stream()
+                            .map(map -> map.getTag().getName())
+                            .collect(Collectors.toList());
 
-                    // Search term filtering
-                    if (searchTermOpt.isPresent()) {
-                        String searchTerm = searchTermOpt.get().toLowerCase();
-                        boolean matches = team.getTeamTitle().toLowerCase().contains(searchTerm) ||
-                                team.getMember().getName().toLowerCase().contains(searchTerm) ||
-                                team.getTeamContent().toLowerCase().contains(searchTerm);
-                        if (!matches) {
-                            return null;
-                        }
-                    }
-                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(team.getMember());
-
-
-                    // Construct MemberInfo
-                    CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
-                            team.getMember().getId(),
-                            memberInfoEntity.getImageUrl(),
-                            memberInfoEntity.getNickname()
-                    );
-
-                    // Shortened content
+                    // 내용 80자 제한
                     String shortenedContent = team.getTeamContent();
                     if (shortenedContent.length() > 80) {
                         shortenedContent = shortenedContent.substring(0, 80) + "...";
                     }
 
-                    return TeamConverter.toTeamListResponse(team, memberInfo, likeCount, shortenedContent);
+                    return TeamConverter.toTeamListResponse(team, memberInfo, likeCount, shortenedContent, techStackNames, tagNames);
                 })
-                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        // Sorting
-        switch (sortBy.toLowerCase()) {
-            case "likes":
-                teamList.sort(Comparator.comparingLong(TeamResponse.TeamListResponse::getLikes).reversed());
-                break;
-            case "views":
-                teamList.sort(Comparator.comparingLong(TeamResponse.TeamListResponse::getViews).reversed());
-                break;
-            default:
-                teamList.sort(Comparator.comparing(TeamResponse.TeamListResponse::getCreatedAt).reversed());
-                break;
-        }
 
-        return teamList;
+        // CustomPageResponse로 반환
+        return new CustomPageResponse<>(
+                teamList,
+                teams.getTotalPages(),
+                teams.getTotalElements(),
+                pageable.getPageNumber() + 1, // 1부터 시작하도록 조정
+                pageable.getPageSize(),
+                teams.isFirst(),
+                teams.isLast()
+        );
     }
 
+    // MemberInfo 생성 로직 분리
+    private CommunityResponse.MemberInfo getMemberInfo(Team team) {
+        MemberInfo memberInfoEntity = memberInfoRepository.findByMember(team.getMember());
+        return new CommunityResponse.MemberInfo(
+                team.getMember().getId(),
+                memberInfoEntity.getImageUrl(),
+                memberInfoEntity.getNickname()
+        );
+    }
 
     @Override
     @Transactional

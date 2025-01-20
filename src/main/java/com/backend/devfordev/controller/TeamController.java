@@ -5,6 +5,7 @@ import com.backend.devfordev.apiPayload.code.status.SuccessStatus;
 
 import com.backend.devfordev.domain.enums.TeamType;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.dto.TeamDto.TeamRequest;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
 import com.backend.devfordev.service.TeamService.TeamService;
@@ -13,6 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,29 +45,31 @@ public class TeamController {
     }
 
 
-    @Operation(summary = "팀 모집글 전체 조회", description = "팀 모집 공고 전체 글 조회 api입니다. 검색, 필터링, 정렬 적용.")
-    @GetMapping(value = "/v1/team")
-    public ResponseEntity<ApiResponse<List<TeamResponse.TeamListResponse>>> getTeamList(
+    @Operation(summary = "팀 모집글 전체 조회", description = "팀 모집 공고 전체 글 조회 API입니다. 검색, 필터링, 정렬, 페이징 적용.")
+    @GetMapping("/v1/team")
+    public ResponseEntity<ApiResponse<CustomPageResponse<TeamResponse.TeamListResponse>>> getTeamList(
             @RequestParam(required = false) String searchTerm,
             @RequestParam(required = false) TeamType teamType,
             @RequestParam(required = false) List<String> positions,
             @RequestParam(required = false) List<String> techStacks,
             @RequestParam(defaultValue = "recent") String sortBy,
-            @RequestParam(required = false) Boolean teamIsActive) {
+            @RequestParam(required = false) Boolean teamIsActive,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
 
-            List<TeamResponse.TeamListResponse> teamList = teamService.getTeamList(
-                    Optional.ofNullable(searchTerm),
-                    Optional.ofNullable(teamType),
-                    positions != null ? positions : Collections.emptyList(),
-                    techStacks != null ? techStacks : Collections.emptyList(),
-                    sortBy,
-                    Optional.ofNullable(teamIsActive)
-            );
+        CustomPageResponse<TeamResponse.TeamListResponse> teamList = teamService.getTeamList(
+                Optional.ofNullable(searchTerm),
+                Optional.ofNullable(teamType),
+                positions != null ? positions : Collections.emptyList(),
+                techStacks != null ? techStacks : Collections.emptyList(),
+                sortBy,
+                Optional.ofNullable(teamIsActive),
+                pageable
+        );
 
-            ApiResponse<List<TeamResponse.TeamListResponse>> apiResponse = ApiResponse.onSuccess(teamList);
-
-        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
-
+        return ResponseEntity.ok(ApiResponse.onSuccess(teamList));
     }
 
 

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface LikeRepository extends JpaRepository<Heart, Long> {
@@ -24,4 +26,12 @@ public interface LikeRepository extends JpaRepository<Heart, Long> {
     Long countByLikeIdAndLikeType(@Param("likeId") Long likeId, @Param("likeType") LikeType likeType);
     // 유저가 특정 게시물에 좋아요를 눌렀는지 확인하는 메서드
     Optional<Heart> findByMemberAndLikeIdAndLikeType(Member member, Long likeId, LikeType likeType);
+
+    @Query("SELECT h.likeId, COUNT(h) FROM Heart h " +
+            "WHERE h.likeType = :likeType AND h.likeId IN :teamIds " +
+            "GROUP BY h.likeId")
+    Map<Long, Long> countLikesByTeamIds(
+            @Param("teamIds") List<Long> teamIds,
+            @Param("likeType") LikeType likeType);
+
 }
