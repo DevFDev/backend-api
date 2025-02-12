@@ -40,6 +40,12 @@ public class Project extends BaseEntity {
     @Column(name = "pro_category", nullable = false)
     private ProjectCategory projectCategory;
 
+    @Column(name = "pro_tech_stacks")
+    private String proTechStacks;
+
+    @Column(name = "pro_summary", nullable = false)
+    private String projectSummary;
+
     @Column(name = "pro_image")
     private String projectImageUrl;
 
@@ -56,5 +62,9 @@ public class Project extends BaseEntity {
 
     public void setTags(List<String> tags) {
         this.projectTags = String.join(",", tags);
+    }
+
+    public void setProTechStacks(List<String> proTechStacks) {
+        this.proTechStacks = String.join(",", proTechStacks);
     }
 }

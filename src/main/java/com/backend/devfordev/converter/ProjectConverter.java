@@ -18,6 +18,7 @@ public class ProjectConverter {
         Project project = Project.builder()
                 .projectTitle(request.getProjectTitle())
                 .projectContent(request.getProjectContent())
+                .projectSummary(request.getProjectSummary())
                 .projectCategory(request.getProjectCategory())
                 .projectImageUrl(imageUrl)
                 .projectViews(0L)
@@ -26,6 +27,7 @@ public class ProjectConverter {
 
         // techStacks 리스트를 쉼표로 구분된 문자열로 변환하여 저장
         project.setTags(Collections.singletonList(String.join(",", request.getTags())));
+        project.setProTechStacks(Collections.singletonList(String.join(",", request.getProjectTechStacks())));
         return project;
     }
 
