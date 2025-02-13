@@ -18,6 +18,7 @@ public class ProjectConverter {
         Project project = Project.builder()
                 .projectTitle(request.getProjectTitle())
                 .projectContent(request.getProjectContent())
+                .projectSummary(request.getProjectSummary())
                 .projectCategory(request.getProjectCategory())
                 .projectImageUrl(imageUrl)
                 .projectViews(0L)
@@ -26,6 +27,7 @@ public class ProjectConverter {
 
         // techStacks 리스트를 쉼표로 구분된 문자열로 변환하여 저장
         project.setTags(Collections.singletonList(String.join(",", request.getTags())));
+        project.setProTechStacks(Collections.singletonList(String.join(",", request.getProjectTechStacks())));
         return project;
     }
 
@@ -51,14 +53,17 @@ public class ProjectConverter {
                 ))
                 .collect(Collectors.toList());
 
-        List<String> tags = project.getProjectTags() != null ? Collections.singletonList(project.getProjectTags()) : new ArrayList<>();
+        List<String> projectTechStacks = project.getProTechStacks() != null ? project.getProTechStacks() : new ArrayList<>();
+        List<String> tags = project.getTags() != null ? project.getTags() : new ArrayList<>();
         return new ProjectResponse.ProjectCreateResponse(
                 project.getId(),
                 project.getMember().getId(),
                 project.getProjectTitle(),
                 project.getProjectContent(),
+                project.getProjectSummary(),
                 project.getProjectCategory(),
                 tags,
+                projectTechStacks,
                 project.getProjectImageUrl(),
                 project.getCreatedAt(),
                 linkResponses

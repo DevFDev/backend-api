@@ -6,6 +6,8 @@ import com.backend.devfordev.domain.enums.ProjectCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Entity
@@ -40,6 +42,12 @@ public class Project extends BaseEntity {
     @Column(name = "pro_category", nullable = false)
     private ProjectCategory projectCategory;
 
+    @Column(name = "pro_tech_stacks")
+    private String proTechStacks;
+
+    @Column(name = "pro_summary", nullable = false)
+    private String projectSummary;
+
     @Column(name = "pro_image")
     private String projectImageUrl;
 
@@ -56,5 +64,17 @@ public class Project extends BaseEntity {
 
     public void setTags(List<String> tags) {
         this.projectTags = String.join(",", tags);
+    }
+
+    public void setProTechStacks(List<String> proTechStacks) {
+        this.proTechStacks = String.join(",", proTechStacks);
+    }
+
+    public List<String> getProTechStacks() {
+        return proTechStacks != null ? Arrays.asList(proTechStacks.split(",")) : new ArrayList<>();
+    }
+
+    public List<String> getTags() {
+        return projectTags != null ? Arrays.asList(projectTags.split(",")) : new ArrayList<>();
     }
 }
