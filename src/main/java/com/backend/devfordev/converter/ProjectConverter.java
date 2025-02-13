@@ -53,14 +53,17 @@ public class ProjectConverter {
                 ))
                 .collect(Collectors.toList());
 
-        List<String> tags = project.getProjectTags() != null ? Collections.singletonList(project.getProjectTags()) : new ArrayList<>();
+        List<String> projectTechStacks = project.getProTechStacks() != null ? project.getProTechStacks() : new ArrayList<>();
+        List<String> tags = project.getTags() != null ? project.getTags() : new ArrayList<>();
         return new ProjectResponse.ProjectCreateResponse(
                 project.getId(),
                 project.getMember().getId(),
                 project.getProjectTitle(),
                 project.getProjectContent(),
+                project.getProjectSummary(),
                 project.getProjectCategory(),
                 tags,
+                projectTechStacks,
                 project.getProjectImageUrl(),
                 project.getCreatedAt(),
                 linkResponses
