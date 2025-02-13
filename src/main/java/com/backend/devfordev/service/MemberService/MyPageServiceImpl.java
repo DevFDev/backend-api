@@ -37,6 +37,7 @@ public class MyPageServiceImpl implements MyPageService{
         return MyPageConverter.toGetProfileResponse(member, memberInfo);
     }
 
+    @Transactional
     public MyPageInfoResponse.ProfileUpdateResponse updateProfile(Long memberId, MyPageInfoRequest.ProfileUpdateRequest request, MultipartFile profileImage) {
         try {
             // Member와 MemberInfo 엔티티 조회
