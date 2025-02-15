@@ -3,6 +3,7 @@ package com.backend.devfordev.controller;
 import com.backend.devfordev.apiPayload.ApiResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
+import com.backend.devfordev.dto.TeamDto.TeamResponse;
 import com.backend.devfordev.service.ProjectService.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,10 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "프로젝트 API")
@@ -36,5 +34,14 @@ public class ProjectController {
         ApiResponse<ProjectResponse.ProjectCreateResponse> apiResponse = ApiResponse.onSuccess(proCreateResponse);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
+    }
+
+    @Operation(summary = "프로젝트 상세 조회", description = "각 프로젝트 게시글을 상세 조회할 수 있는 api입니다.")
+    @GetMapping(value = "/v1/project/{projectId}")
+    public ResponseEntity<ApiResponse<ProjectResponse.ProjectDetailResponse>> getProjectDetail(@PathVariable Long projectId) {
+        ProjectResponse.ProjectDetailResponse projectDetailResponse = projectService.getProjectDetail(projectId);
+
+        ApiResponse<ProjectResponse.ProjectDetailResponse> apiResponse = ApiResponse.onSuccess(projectDetailResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 }

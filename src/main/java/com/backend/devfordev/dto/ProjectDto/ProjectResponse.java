@@ -1,6 +1,7 @@
 package com.backend.devfordev.dto.ProjectDto;
 
 import com.backend.devfordev.domain.enums.ProjectCategory;
+import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -66,8 +67,8 @@ public class ProjectResponse {
     public static class ProjectDetailResponse {
         @Schema(description = "프로젝트 ID", example = "1")
         Long id;
-        @Schema(description = "작성자 ID", example = "1")
-        Long writer;
+        //@Schema(description = "작성자 ID", example = "1")
+        CommunityResponse.MemberInfo writer;
         @Schema(description = "프로젝트  제목", example = "김민지의 프로젝트 ~~")
         String projectTitle;
         @Schema(description = "프로젝트 내용", example = "프로젝트 내용~~")

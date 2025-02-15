@@ -1,13 +1,22 @@
 package com.backend.devfordev.service.ProjectService;
 
 import com.backend.devfordev.apiPayload.code.status.ErrorStatus;
+import com.backend.devfordev.apiPayload.exception.handler.CommunityHandler;
 import com.backend.devfordev.apiPayload.exception.handler.MemberHandler;
+import com.backend.devfordev.apiPayload.exception.handler.ProjectHandler;
 import com.backend.devfordev.converter.ProjectConverter;
+import com.backend.devfordev.converter.TeamConverter;
 import com.backend.devfordev.domain.MemberEntity.Member;
+import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
+import com.backend.devfordev.domain.TeamEntity.Team;
+import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
+import com.backend.devfordev.dto.TeamDto.TeamResponse;
+import com.backend.devfordev.repository.LikeRepository;
+import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.ProjectRepository.ProjectLinkRepository;
 import com.backend.devfordev.repository.ProjectRepository.ProjectRepository;
@@ -27,6 +36,8 @@ public class ProjectServiceImpl implements ProjectService{
     private final ProjectRepository projectRepository;
     private final ProjectLinkRepository projectLinkRepository;
     private final S3Service s3Service;
+    private final LikeRepository likeRepository;
+    private final MemberInfoRepository memberInfoRepository;
 
     @Override
     @Transactional
@@ -61,5 +72,36 @@ public class ProjectServiceImpl implements ProjectService{
 
         // 포트폴리오 응답 변환
         return ProjectConverter.toProjectResponse(project, links);
+    }
+
+    @Override
+    @Transactional
+    public ProjectResponse.ProjectDetailResponse getProjectDetail(Long id) {
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
+
+//        if (project.getDeletedAt() != null) {
+//            throw new CommunityHandler(ErrorStatus.TEAM_DELETED);
+//        }
+
+        Long Likecount = likeRepository.countByTeamId(id);
+        MemberInfo memberInfoEntity = memberInfoRepository.findByMember(project.getMember());
+
+        // Construct MemberInfo
+        CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
+                project.getMember().getId(),
+                memberInfoEntity.getImageUrl(),
+                memberInfoEntity.getNickname()
+        );
+
+        // 프로젝트 링크 조회
+        List<ProjectLink> links = projectLinkRepository.findByProject(project);
+
+        // 순서 자동 설정
+        for (int i = 0; i < links.size(); i++) {
+            links.get(i).setOrderIndex(i + 1);
+        }
+
+        return ProjectConverter.toProjectDetailResponse(project, memberInfo, Likecount, links);
     }
 }
