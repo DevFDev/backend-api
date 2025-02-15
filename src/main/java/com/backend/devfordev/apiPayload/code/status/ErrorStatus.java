@@ -56,6 +56,8 @@ public enum ErrorStatus implements BaseErrorCode {
     SAME_PASSWORD_NOT_ALLOWED(BAD_REQUEST, "MEMBER006", "New password cannot be the same as the current password."),
     EMAIL_DUPLICATED(BAD_REQUEST, "MEMBER007", "The email is already in use."),
 
+    // 프로젝트
+    PROJECT_NOT_FOUND(BAD_REQUEST, "PROJECT001", "Project Not Found"),
     // 커뮤니티
     INVALID_CATEGORY(BAD_REQUEST, "COM001", "Only SKILL, CAREER, and OTHER are available."),
     COMMUNITY_NOT_FOUND(BAD_REQUEST, "COM002", "Community Not Found"),

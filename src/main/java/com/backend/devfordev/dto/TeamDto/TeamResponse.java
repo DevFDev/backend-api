@@ -37,11 +37,13 @@ public class TeamResponse {
         LocalDateTime createdAt;
     }
 
+
     @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TeamListResponse {
+
         @Schema(description = "팀 모집 id", example = "1")
         Long id;
         CommunityResponse.MemberInfo writer;

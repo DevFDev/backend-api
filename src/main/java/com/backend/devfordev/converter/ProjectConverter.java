@@ -3,6 +3,7 @@ package com.backend.devfordev.converter;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
+import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 
@@ -67,6 +68,41 @@ public class ProjectConverter {
                 project.getProjectImageUrl(),
                 project.getCreatedAt(),
                 linkResponses
+        );
+    }
+
+    public static ProjectResponse.ProjectDetailResponse toProjectDetailResponse(
+            Project project, CommunityResponse.MemberInfo member, Long likeCount, List<ProjectLink> links) {
+
+        // 기술 스택과 태그를 문자열 리스트로 변환
+        List<String> tags = project.getTags() != null ? project.getTags() : new ArrayList<>();
+
+        List<String> techStackNames = project.getProTechStacks() != null ? project.getProTechStacks() : new ArrayList<>();
+
+        List<ProjectResponse.ProjectCreateResponse.LinkResponse> linkResponses = links.stream()
+                .map(link -> new ProjectResponse.ProjectCreateResponse.LinkResponse(
+                        link.getType(),
+                        link.getUrl(),
+                        link.getOrderIndex()
+                ))
+                .collect(Collectors.toList());
+        // TeamDetailResponse 객체 반환
+        return new ProjectResponse.ProjectDetailResponse(
+                project.getId(),
+                member,
+                project.getProjectTitle(),
+                project.getProjectContent(),
+                project.getProjectSummary(),
+                project.getProjectCategory(),
+                tags,
+                techStackNames,
+                project.getProjectImageUrl(),
+                project.getCreatedAt(),
+                linkResponses,
+                project.getProjectViews(),
+                0L,
+                likeCount
+
         );
     }
 }
