@@ -133,4 +133,33 @@ public class ProjectConverter {
         project.setProTechStacks(Collections.singletonList(String.join(",", request.getProjectTechStacks())));
     }
 
+
+    public static ProjectResponse.ProjectUpdateResponse toProjectUpdateResponse(
+            Project project,
+            List<ProjectLink> links
+    ) {
+        List<ProjectResponse.ProjectCreateResponse.LinkResponse> linkResponses = links.stream()
+                .map(link -> new ProjectResponse.ProjectCreateResponse.LinkResponse(
+                        link.getType(),
+                        link.getUrl(),
+                        link.getOrderIndex()
+                ))
+                .collect(Collectors.toList());
+
+        List<String> projectTechStacks = project.getProTechStacks() != null ? project.getProTechStacks() : new ArrayList<>();
+        List<String> tags = project.getTags() != null ? project.getTags() : new ArrayList<>();
+        return new ProjectResponse.ProjectUpdateResponse(
+                project.getId(),
+                project.getProjectTitle(),
+                project.getProjectContent(),
+                project.getProjectSummary(),
+                project.getProjectCategory(),
+                tags,
+                projectTechStacks,
+                project.getProjectImageUrl(),
+                project.getCreatedAt(),
+                linkResponses
+        );
+    }
+
 }

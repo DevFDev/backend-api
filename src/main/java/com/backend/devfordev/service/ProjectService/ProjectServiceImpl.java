@@ -104,7 +104,7 @@ public class ProjectServiceImpl implements ProjectService{
 
     @Override
     @Transactional
-    public void updateProject(Long projectId, Long userId, ProjectRequest.ProjectUpdateRequest request, MultipartFile projectImage){
+    public ProjectResponse.ProjectUpdateResponse updateProject(Long projectId, Long userId, ProjectRequest.ProjectUpdateRequest request, MultipartFile projectImage){
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new MemberHandler(ErrorStatus.INVALID_MEMBER));
         Project project = projectRepository.findById(projectId)
@@ -135,5 +135,6 @@ public class ProjectServiceImpl implements ProjectService{
         }
         projectLinkRepository.saveAll(links);
         //return ProjectConverter.toProjectDetailResponse(project);
+        return ProjectConverter.toProjectUpdateResponse(project, links);
     }
 }
