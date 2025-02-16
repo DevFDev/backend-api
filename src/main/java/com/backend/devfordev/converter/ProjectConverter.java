@@ -32,7 +32,17 @@ public class ProjectConverter {
         return project;
     }
 
-    public static List<ProjectLink> toProjectLinks(List<ProjectRequest.ProjectCreateRequest.LinkRequest> linkRequests, Project project) {
+    public static List<ProjectLink> toProjectCreateLinks(List<ProjectRequest.ProjectCreateRequest.LinkRequest> linkRequests, Project project) {
+        return linkRequests.stream()
+                .map(linkRequest -> ProjectLink.builder()
+                        .type(linkRequest.getType())
+                        .url(linkRequest.getUrl())
+                        .project(project)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    public static List<ProjectLink> toProjectUdpateLinks(List<ProjectRequest.ProjectUpdateRequest.LinkRequest> linkRequests, Project project) {
         return linkRequests.stream()
                 .map(linkRequest -> ProjectLink.builder()
                         .type(linkRequest.getType())
@@ -105,4 +115,51 @@ public class ProjectConverter {
 
         );
     }
+
+    public static void toUpdateProject(Project project, ProjectRequest.ProjectUpdateRequest request, String imageUrl) {
+        // 변경된 데이터만 업데이트
+        project.setProjectTitle(request.getProjectTitle());
+        project.setProjectContent(request.getProjectContent());
+        project.setProjectSummary(request.getProjectSummary());
+        project.setProjectCategory(request.getProjectCategory());
+
+        // 이미지가 변경되었을 경우 업데이트
+        if (imageUrl != null) {
+            project.setProjectImageUrl(imageUrl);
+        }
+
+        // 기술 스택과 태그 리스트 업데이트 (쉼표로 구분된 문자열로 변환)
+        project.setTags(Collections.singletonList(String.join(",", request.getTags())));
+        project.setProTechStacks(Collections.singletonList(String.join(",", request.getProjectTechStacks())));
+    }
+
+
+    public static ProjectResponse.ProjectUpdateResponse toProjectUpdateResponse(
+            Project project,
+            List<ProjectLink> links
+    ) {
+        List<ProjectResponse.ProjectCreateResponse.LinkResponse> linkResponses = links.stream()
+                .map(link -> new ProjectResponse.ProjectCreateResponse.LinkResponse(
+                        link.getType(),
+                        link.getUrl(),
+                        link.getOrderIndex()
+                ))
+                .collect(Collectors.toList());
+
+        List<String> projectTechStacks = project.getProTechStacks() != null ? project.getProTechStacks() : new ArrayList<>();
+        List<String> tags = project.getTags() != null ? project.getTags() : new ArrayList<>();
+        return new ProjectResponse.ProjectUpdateResponse(
+                project.getId(),
+                project.getProjectTitle(),
+                project.getProjectContent(),
+                project.getProjectSummary(),
+                project.getProjectCategory(),
+                tags,
+                projectTechStacks,
+                project.getProjectImageUrl(),
+                project.getCreatedAt(),
+                linkResponses
+        );
+    }
+
 }
