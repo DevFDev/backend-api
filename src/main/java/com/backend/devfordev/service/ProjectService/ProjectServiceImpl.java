@@ -79,9 +79,9 @@ public class ProjectServiceImpl implements ProjectService{
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
 
-//        if (project.getDeletedAt() != null) {
-//            throw new CommunityHandler(ErrorStatus.TEAM_DELETED);
-//        }
+        if (project.getDeletedAt() != null) {
+            throw new CommunityHandler(ErrorStatus.PROJECT_DELETED);
+        }
 
         Long Likecount = likeRepository.countByTeamId(id);
         MemberInfo memberInfoEntity = memberInfoRepository.findByMember(project.getMember());
@@ -146,9 +146,9 @@ public class ProjectServiceImpl implements ProjectService{
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
 
-//        if (project.getDeletedAt() != null) {
-//            throw new CommunityHandler(ErrorStatus.TEAM_DELETED);
-//        }
+        if (project.getDeletedAt() != null) {
+            throw new TeamHandler(ErrorStatus.PROJECT_DELETED);
+        }
 
 
         if (!project.getMember().getId().equals(userId)) {
