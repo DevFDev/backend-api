@@ -5,16 +5,13 @@ import com.backend.devfordev.apiPayload.exception.handler.CommunityHandler;
 import com.backend.devfordev.apiPayload.exception.handler.MemberHandler;
 import com.backend.devfordev.apiPayload.exception.handler.ProjectHandler;
 import com.backend.devfordev.converter.ProjectConverter;
-import com.backend.devfordev.converter.TeamConverter;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
-import com.backend.devfordev.domain.TeamEntity.Team;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
-import com.backend.devfordev.dto.TeamDto.TeamResponse;
 import com.backend.devfordev.repository.LikeRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
@@ -64,7 +61,7 @@ public class ProjectServiceImpl implements ProjectService{
         projectRepository.save(project);
 
         // 링크 리스트 순서 자동 설정 후 변환 및 저장
-        List<ProjectLink> links = ProjectConverter.toProjectLinks(request.getLinks(), project);
+        List<ProjectLink> links = ProjectConverter.toProjectCreateLinks(request.getLinks(), project);
         for (int i = 0; i < links.size(); i++) {
             links.get(i).setOrderIndex(i + 1); // 자동 순서 설정
         }
@@ -103,5 +100,40 @@ public class ProjectServiceImpl implements ProjectService{
         }
 
         return ProjectConverter.toProjectDetailResponse(project, memberInfo, Likecount, links);
+    }
+
+    @Override
+    @Transactional
+    public void updateProject(Long projectId, Long userId, ProjectRequest.ProjectUpdateRequest request, MultipartFile projectImage){
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.INVALID_MEMBER));
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
+
+        if (!project.getMember().getId().equals(userId)) {
+            throw new ProjectHandler(ErrorStatus.UNAUTHORIZED_USER);
+        }
+
+        String imageUrl = project.getProjectImageUrl();
+        try {
+            if (projectImage != null && !projectImage.isEmpty()) {
+                imageUrl = s3Service.saveProfileImage(projectImage);
+            }
+        } catch (IOException e) {
+            throw new ProjectHandler(ErrorStatus.IMAGE_UPLOAD_FAILED);
+        }
+        ProjectConverter.toUpdateProject(project, request, imageUrl);
+
+        // 링크 삭제하고 새로 추가하기
+        projectLinkRepository.deleteByProject(project);
+
+        // 링크 리스트 순서 자동 설정 후 변환 및 저장
+        List<ProjectLink> links = ProjectConverter.toProjectUdpateLinks(request.getLinks(), project);
+
+        for (int i = 0; i < links.size(); i++) {
+            links.get(i).setOrderIndex(i + 1); // 자동 순서 설정
+        }
+        projectLinkRepository.saveAll(links);
+        //return ProjectConverter.toProjectDetailResponse(project);
     }
 }

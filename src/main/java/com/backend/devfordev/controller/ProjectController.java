@@ -44,4 +44,18 @@ public class ProjectController {
         ApiResponse<ProjectResponse.ProjectDetailResponse> apiResponse = ApiResponse.onSuccess(projectDetailResponse);
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
+
+    @Operation(summary = "프로젝트 수정", description = "기존 프로젝트의 정보를 업데이트합니다.")
+    @PatchMapping(value = "/v1/projects/{projectId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Void>> updateProject(
+            @PathVariable Long projectId,
+            @AuthenticationPrincipal User user,
+            @Valid @RequestPart("request") ProjectRequest.ProjectUpdateRequest request,
+            @RequestPart(value = "projectImage", required = false) MultipartFile projectImage) {
+
+        projectService.updateProject(projectId, Long.parseLong(user.getUsername()), request, projectImage);
+
+        return ResponseEntity.ok(ApiResponse.onSuccess(null));
+    }
+
 }
