@@ -4,11 +4,13 @@ import com.backend.devfordev.apiPayload.code.status.ErrorStatus;
 import com.backend.devfordev.apiPayload.exception.handler.CommunityHandler;
 import com.backend.devfordev.apiPayload.exception.handler.MemberHandler;
 import com.backend.devfordev.apiPayload.exception.handler.ProjectHandler;
+import com.backend.devfordev.apiPayload.exception.handler.TeamHandler;
 import com.backend.devfordev.converter.ProjectConverter;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
+import com.backend.devfordev.domain.TeamEntity.Team;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
@@ -77,9 +79,9 @@ public class ProjectServiceImpl implements ProjectService{
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
 
-//        if (project.getDeletedAt() != null) {
-//            throw new CommunityHandler(ErrorStatus.TEAM_DELETED);
-//        }
+        if (project.getDeletedAt() != null) {
+            throw new CommunityHandler(ErrorStatus.PROJECT_DELETED);
+        }
 
         Long Likecount = likeRepository.countByTeamId(id);
         MemberInfo memberInfoEntity = memberInfoRepository.findByMember(project.getMember());
@@ -137,4 +139,25 @@ public class ProjectServiceImpl implements ProjectService{
         //return ProjectConverter.toProjectDetailResponse(project);
         return ProjectConverter.toProjectUpdateResponse(project, links);
     }
+
+    @Override
+    @Transactional
+    public void deleteProject(Long projectId, Long userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
+
+        if (project.getDeletedAt() != null) {
+            throw new TeamHandler(ErrorStatus.PROJECT_DELETED);
+        }
+
+
+        if (!project.getMember().getId().equals(userId)) {
+            throw new CommunityHandler(ErrorStatus.UNAUTHORIZED_USER);
+        }
+
+        project.deleteSoftly();
+
+        projectRepository.save(project);
+    }
+
 }

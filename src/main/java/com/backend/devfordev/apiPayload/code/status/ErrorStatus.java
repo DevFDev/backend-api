@@ -58,6 +58,7 @@ public enum ErrorStatus implements BaseErrorCode {
 
     // 프로젝트
     PROJECT_NOT_FOUND(BAD_REQUEST, "PROJECT001", "Project Not Found"),
+    PROJECT_DELETED(BAD_REQUEST, "PROJECT002", "This is a deleted post."),
     // 커뮤니티
     INVALID_CATEGORY(BAD_REQUEST, "COM001", "Only SKILL, CAREER, and OTHER are available."),
     COMMUNITY_NOT_FOUND(BAD_REQUEST, "COM002", "Community Not Found"),

@@ -209,7 +209,7 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new TeamHandler(ErrorStatus.TEAM_NOT_FOUND));
 
         if (team.getDeletedAt() != null) {
-            throw new CommunityHandler(ErrorStatus.TEAM_DELETED);
+            throw new TeamHandler(ErrorStatus.TEAM_DELETED);
         }
 
 
