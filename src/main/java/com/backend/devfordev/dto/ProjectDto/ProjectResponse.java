@@ -129,4 +129,46 @@ public class ProjectResponse {
         private List<ProjectResponse.ProjectCreateResponse.LinkResponse> links; // 링크 리스트 추가
 
     }
+
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProjectListResponse {
+        @Schema(description = "프로젝트 ID", example = "1")
+        Long id;
+
+        CommunityResponse.MemberInfo writer;
+
+        @Schema(description = "프로젝트  제목", example = "김민지의 프로젝트 ~~")
+        String projectTitle;
+//        @Schema(description = "프로젝트 내용", example = "프로젝트 내용~~")
+//        String projectContent;
+//        @NotNull(message = "This field must not be null.")
+//        @Schema(description = "프로젝트 개요", example = "프로젝트 개요~~")
+//        String projectSummary;
+        @Schema(description = "프로젝트 분류", example = "APP")
+        ProjectCategory projectCategory;
+
+        @Schema(description = "태그", example = "[\"태그1\", \"태그2\", \"태그3\"]")
+        List<String> tags;
+//        @Schema(description = "기술 스택", example = "[\"Java\", \"Spring\", \"AWS\"]")
+//        List<String> projectTechStacks;
+        @Schema(description = "프로젝트 이미지 url", example = "이미지url")
+        String projectImageUrl;
+
+        @Schema(description = "작성시간", example = "2024-11-19T00:52:47.534061")
+        LocalDateTime createdAt;
+
+        @Schema(description = "조회수", example = "0")
+        Long views;
+
+        @Schema(description = "답변수", example = "0")
+        Long answers;
+
+        @Schema(description = "좋아요수", example = "0")
+        Long likes;
+
+    }
 }
