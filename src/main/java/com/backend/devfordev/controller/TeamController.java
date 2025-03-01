@@ -70,8 +70,8 @@ public class TeamController {
 
     @Operation(summary = "팀 모집글 상세 조회", description = "각 팀 모집 공고를 상세 조회할 수 있는 api입니다.")
     @GetMapping(value = "/v1/team/{teamId}")
-    public ResponseEntity<ApiResponse<TeamResponse.TeamDetailResponse>> getTeamDetail(@PathVariable Long id) {
-        TeamResponse.TeamDetailResponse teamDetail = teamService.getTeamDetail(id);
+    public ResponseEntity<ApiResponse<TeamResponse.TeamDetailResponse>> getTeamDetail(@PathVariable Long teamId) {
+        TeamResponse.TeamDetailResponse teamDetail = teamService.getTeamDetail(teamId);
 
         ApiResponse<TeamResponse.TeamDetailResponse> apiResponse = ApiResponse.onSuccess(teamDetail);
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);

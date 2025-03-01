@@ -16,7 +16,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,5 +64,17 @@ public class LikeServiceImpl implements LikeService {
         // 전체 좋아요 수 계산
         //return LikeConverter.toLikeResponse(existingLike.orElse(null), totalLikes, userId, existingLike.isPresent() ? -1 : +1);
     }
+
+    public Map<Long, Long> getProjectLikeCounts(List<Long> projectIds) {
+        List<Object[]> results = likeRepository.countByProjectIds(projectIds, LikeType.PROJECT); // ✅ 여기서 Enum으로 전달
+
+        return results.stream()
+                .collect(Collectors.toMap(
+                        result -> (Long) result[0],  // 프로젝트 ID
+                        result -> (Long) result[1]   // 좋아요 개수
+                ));
+    }
+
+
 }
 

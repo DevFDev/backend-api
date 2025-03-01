@@ -99,8 +99,7 @@ public class ProjectController {
         List<ProjectResponse.ProjectListResponse> projectList = projectService.getProjectList(
                 Optional.ofNullable(projectCategory),
                 Optional.ofNullable(searchTerm),
-                sortBy,
-                sortedPageable
+                sortBy
         );
 
         ApiResponse<List<ProjectResponse.ProjectListResponse>> apiResponse = ApiResponse.onSuccess(projectList);

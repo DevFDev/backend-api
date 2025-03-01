@@ -11,6 +11,7 @@ import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
 import com.backend.devfordev.domain.TeamEntity.Team;
+import com.backend.devfordev.domain.enums.LikeType;
 import com.backend.devfordev.domain.enums.ProjectCategory;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
@@ -20,6 +21,7 @@ import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.ProjectRepository.ProjectLinkRepository;
 import com.backend.devfordev.repository.ProjectRepository.ProjectRepository;
+import com.backend.devfordev.service.LikeService.LikeService;
 import com.backend.devfordev.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +48,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final S3Service s3Service;
     private final LikeRepository likeRepository;
     private final MemberInfoRepository memberInfoRepository;
+    private final LikeService likeService;
 
     @Override
     @Transactional
@@ -173,35 +177,23 @@ public class ProjectServiceImpl implements ProjectService{
     public List<ProjectResponse.ProjectListResponse> getProjectList(
             Optional<ProjectCategory> categoryOpt,
             Optional<String> searchTermOpt,
-            String sortBy,
-            Pageable pageable
+            String sortBy
     ) {
-        // 동적으로 정렬된 Pageable 생성
-        Pageable sortedPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by(Sort.Direction.DESC,
-                        sortBy.equalsIgnoreCase("likes") ? "likes" :
-                                sortBy.equalsIgnoreCase("views") ? "projectViews" : "createdAt") // 기본값 recent → createdAt
-        );
-        // 프로젝트 데이터 조회
-        Page<Project> projects = projectRepository.findByFilters(
+        // ✅ 좋아요 포함된 프로젝트 데이터 조회
+        List<Object[]> results = projectRepository.findProjectsWithLikes(
                 categoryOpt.orElse(null),
                 searchTermOpt.orElse(null),
-                sortedPageable
+                LikeType.PROJECT
         );
 
-        // 좋아요 수 조회
-        List<Long> projectIds = projects.stream().map(Project::getId).collect(Collectors.toList());
-        Map<Long, Long> likeCounts = likeRepository.countLikesByProjectIds(projectIds);
+        // ✅ 데이터 변환
+        List<ProjectResponse.ProjectListResponse> projectList = results.stream()
+                .map(result -> {
+                    Project project = (Project) result[0]; // 첫 번째는 Project 객체
+                    Long likeCount = (Long) result[1]; // 두 번째는 좋아요 개수
 
-        // 프로젝트 리스트 변환
-        return projects.stream()
-                .map(project -> {
-                    Long likeCount = likeCounts.getOrDefault(project.getId(), 0L);
                     MemberInfo memberInfoEntity = memberInfoRepository.findByMember(project.getMember());
 
-                    // MemberInfo 생성
                     CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
                             project.getMember().getId(),
                             memberInfoEntity.getImageUrl(),
@@ -212,6 +204,25 @@ public class ProjectServiceImpl implements ProjectService{
                 })
                 .collect(Collectors.toList());
 
+        // ✅ 정렬 기준 적용
+        switch (sortBy.toLowerCase()) {
+            case "likes":
+                projectList.sort(Comparator.comparingLong(ProjectResponse.ProjectListResponse::getLikes).reversed());
+                break;
+            case "views":
+                projectList.sort(Comparator.comparingLong(ProjectResponse.ProjectListResponse::getViews).reversed());
+                break;
+            case "recent":
+            default:
+                projectList.sort(Comparator.comparing(ProjectResponse.ProjectListResponse::getCreatedAt).reversed());
+                break;
+        }
+
+        return projectList;
     }
+
+
+
+
 
 }

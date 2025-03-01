@@ -4,6 +4,7 @@ import com.backend.devfordev.domain.enums.ProjectCategory;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,7 +19,6 @@ public interface ProjectService {
     public List<ProjectResponse.ProjectListResponse> getProjectList(
             Optional<ProjectCategory> categoryOpt,
             Optional<String> searchTermOpt,
-            String sortBy,
-            Pageable pageable
+            String sortBy
     );
 }
