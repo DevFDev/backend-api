@@ -15,16 +15,53 @@ import java.util.List;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT p, COUNT(h) FROM Project p " +
             "LEFT JOIN Heart h ON p.id = h.likeId AND h.likeType = :likeType " +
-            "JOIN p.member m " +
             "WHERE (:category IS NULL OR p.projectCategory = :category) " +
-            "AND (:searchTerm IS NULL OR " +
-            "LOWER(p.projectTitle) LIKE %:searchTerm% OR " +
-            "LOWER(p.projectContent) LIKE %:searchTerm% OR " +
-            "LOWER(m.name) LIKE %:searchTerm%) " +
+            "AND (:searchTerm IS NULL OR LOWER(p.projectTitle) LIKE %:searchTerm% OR LOWER(p.projectContent) LIKE %:searchTerm%) " +
             "GROUP BY p")
-    List<Object[]> findProjectsWithLikes(
+    Page<Object[]> findProjectsWithLikes(
             @Param("category") ProjectCategory category,
             @Param("searchTerm") String searchTerm,
-            @Param("likeType") LikeType likeType);
+            @Param("likeType") LikeType likeType,
+            Pageable pageable
+    );
+
+    @Query("SELECT p, COUNT(h), mi FROM Project p " +
+            "LEFT JOIN p.member m " +
+            "LEFT JOIN MemberInfo mi ON mi.member = m " +
+            "LEFT JOIN Heart h ON p.id = h.likeId AND h.likeType = 'PROJECT' " +
+            "WHERE (:category IS NULL OR p.projectCategory = :category) " +
+            "AND (:searchTerm IS NULL OR LOWER(p.projectTitle) LIKE %:searchTerm%) " +
+            "GROUP BY p, mi")
+    Page<Object[]> findProjectsWithLikes(
+            @Param("category") ProjectCategory category,
+            @Param("searchTerm") String searchTerm,
+            Pageable pageable
+    );
+
+
+    @Query("SELECT p, COUNT(h), mi FROM Project p " +
+            "LEFT JOIN p.member m " +
+            "LEFT JOIN MemberInfo mi ON mi.member = m " +
+            "LEFT JOIN Heart h ON p.id = h.likeId AND h.likeType = 'PROJECT' " +
+            "WHERE (:category IS NULL OR p.projectCategory = :category) " +
+            "AND (:searchTerm IS NULL OR LOWER(p.projectTitle) LIKE %:searchTerm%) " +
+            "GROUP BY p, mi " +
+            "ORDER BY " +
+            "   CASE WHEN :sortBy = 'views' THEN p.projectViews END DESC, " +
+            "   CASE WHEN :sortBy = 'likes' THEN COUNT(h) END DESC, " +
+            "   p.createdAt DESC")
+    Page<Object[]> findProjectsWithLikes(
+            @Param("category") ProjectCategory category,
+            @Param("searchTerm") String searchTerm,
+            @Param("sortBy") String sortBy,
+            Pageable pageable
+    );
+
+
+
+
+
+
+
 
 }

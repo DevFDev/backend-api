@@ -5,6 +5,7 @@ import com.backend.devfordev.apiPayload.code.status.SuccessStatus;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.enums.ProjectCategory;
 import com.backend.devfordev.domain.enums.TeamType;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
@@ -14,8 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -82,28 +85,24 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 
-    @Operation(summary = "프로젝트 게시글 전체 조회", description = "프로젝트 게시글 조회 api입니다. 검색, 필터링, 정렬 적용.")
+    @Operation(summary = "프로젝트 게시글 전체 조회", description = "프로젝트 게시글 조회 API (검색, 필터링, 정렬, 페이징 적용).")
     @GetMapping(value = "/v1/project")
-    public ResponseEntity<ApiResponse<List<ProjectResponse.ProjectListResponse>>> getProjectList(
+    public ResponseEntity<ApiResponse<CustomPageResponse<ProjectResponse.ProjectListResponse>>> getProjectList(
             @RequestParam(required = false) String searchTerm,
             @RequestParam(required = false) ProjectCategory projectCategory,
-            @RequestParam(defaultValue = "recent") String sortBy, // "sortBy"만 사용
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) { // "sort"는 제거됨
-
-        Pageable sortedPageable = PageRequest.of(
-                page - 1, // Page는 0부터 시작하므로 -1 해줌
-                size
-        );
-
-        List<ProjectResponse.ProjectListResponse> projectList = projectService.getProjectList(
+            @RequestParam(defaultValue = "recent") String sortBy,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);  // sort 제외
+        CustomPageResponse<ProjectResponse.ProjectListResponse> projectList = projectService.getProjectList(
                 Optional.ofNullable(projectCategory),
                 Optional.ofNullable(searchTerm),
-                sortBy
+                sortBy,
+                pageable
         );
 
-        ApiResponse<List<ProjectResponse.ProjectListResponse>> apiResponse = ApiResponse.onSuccess(projectList);
-        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+        return ResponseEntity.ok(ApiResponse.onSuccess(projectList));
     }
 
 
