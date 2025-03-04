@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface LikeRepository extends JpaRepository<Heart, Long> {
@@ -14,6 +16,16 @@ public interface LikeRepository extends JpaRepository<Heart, Long> {
     // 커뮤니티의 좋아요 수를 카운트
     @Query("SELECT COUNT(h) FROM Heart h WHERE h.likeId = :communityId AND h.likeType = 'COMMUNITY'")
     Long countByCommunityId(Long communityId);
+
+    @Query("SELECT h.likeId, COUNT(h) FROM Heart h " +
+            "WHERE h.likeId IN :projectIds AND h.likeType = :likeType " +
+            "GROUP BY h.likeId")
+    List<Object[]> countByProjectIds(@Param("projectIds") List<Long> projectIds,
+                                     @Param("likeType") LikeType likeType);
+
+    // 프로젝트의 좋아요 개수 카운트
+    @Query("SELECT COUNT(h) FROM Heart h WHERE h.likeId = :projectId AND h.likeType = 'PROJECT'")
+    Long countByProjectId(@Param("projectId") Long projectId);
 
     // 팀 모집공고의 좋아요 수를 카운트
     @Query("SELECT COUNT(h) FROM Heart h WHERE h.likeId = :teamId AND h.likeType = 'TEAM'")

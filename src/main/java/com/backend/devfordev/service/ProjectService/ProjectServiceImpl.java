@@ -11,7 +11,10 @@ import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
 import com.backend.devfordev.domain.TeamEntity.Team;
+import com.backend.devfordev.domain.enums.LikeType;
+import com.backend.devfordev.domain.enums.ProjectCategory;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 import com.backend.devfordev.repository.LikeRepository;
@@ -19,14 +22,18 @@ import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.ProjectRepository.ProjectLinkRepository;
 import com.backend.devfordev.repository.ProjectRepository.ProjectRepository;
+import com.backend.devfordev.service.LikeService.LikeService;
 import com.backend.devfordev.service.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
+
+
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -38,6 +45,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final S3Service s3Service;
     private final LikeRepository likeRepository;
     private final MemberInfoRepository memberInfoRepository;
+    private final LikeService likeService;
 
     @Override
     @Transactional
@@ -160,6 +168,49 @@ public class ProjectServiceImpl implements ProjectService{
 
         projectRepository.save(project);
     }
+    @Override
+    @Transactional(readOnly = true)
+    public CustomPageResponse<ProjectResponse.ProjectListResponse> getProjectList(
+            Optional<ProjectCategory> categoryOpt,
+            Optional<String> searchTermOpt,
+            String sortBy,
+            Pageable pageable
+    ) {
+        // ✅ 정렬을 Pageable에서 설정
+        Sort sort;
+        switch (sortBy.toLowerCase()) {
+            case "likes" -> sort = Sort.by(Sort.Order.desc("likeCount"));
+            case "views" -> sort = Sort.by(Sort.Order.desc("projectViews"));
+            default -> sort = Sort.by(Sort.Order.desc("createdAt"));  // 기본값: 최신순
+        }
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+        // ✅ 프로젝트 조회
+        Page<Object[]> results = projectRepository.findProjectsWithLikes(
+                categoryOpt.orElse(null),
+                searchTermOpt.orElse(null),
+                pageable  // ✅ 정렬된 Pageable 전달
+        );
+
+
+        Page<ProjectResponse.ProjectListResponse> projectList = results.map(result -> {
+            Project project = (Project) result[0];  // 프로젝트 객체
+            Long likeCount = (Long) result[1];      // 좋아요 개수
+            MemberInfo memberInfoEntity = (MemberInfo) result[2];
+
+            CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
+                    project.getMember().getId(),
+                    memberInfoEntity.getImageUrl(),
+                    memberInfoEntity.getNickname()
+            );
+
+            return ProjectConverter.toProjectListResponse(project, memberInfo, likeCount);
+        });
+
+        return new CustomPageResponse<>(projectList);
+    }
+
+
 
     @Override
     @Transactional

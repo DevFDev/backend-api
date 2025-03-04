@@ -162,6 +162,25 @@ public class ProjectConverter {
         );
     }
 
+
+    public static ProjectResponse.ProjectListResponse toProjectListResponse(
+            Project project, CommunityResponse.MemberInfo member, Long likeCount) {
+        List<String> tags = project.getTags() != null ? project.getTags() : new ArrayList<>();
+        return new ProjectResponse.ProjectListResponse(
+                project.getId(),
+                member,
+                project.getProjectTitle(),
+                project.getProjectCategory(),
+                tags,
+                project.getProjectImageUrl(),
+                project.getCreatedAt(),
+                project.getProjectViews(),
+                0L,
+                likeCount
+
+        );
+    }
+
     public static ProjectResponse.OtherProjectResponse toOtherProjectResponse(Project project) {
         return ProjectResponse.OtherProjectResponse.builder()
                 .id(project.getId())
