@@ -180,4 +180,22 @@ public class PortfolioServiceImpl implements PortfolioService{
 
         portfolioRepository.save(portfolio);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PortfolioResponse.PortCreateResponse getPortfolioDetail(Long portfolioId) {
+        // ✅ 변경된 Repository 메서드 사용 (단일 객체 반환)
+        Portfolio portfolio = portfolioRepository.findPortfolioById(portfolioId)
+                .orElseThrow(() -> new PortfolioHandler(ErrorStatus.PORTFOLIO_NOT_FOUND));
+
+        // ✅ 추가 정보 조회 (링크, 학력, 수상, 경력)
+        List<PortfolioLink> links = portfolioLinkRepository.findByPortfolio(portfolio);
+        List<PortfolioEducation> educations = portfolioEducationRepository.findByPortfolio(portfolio);
+        List<PortfolioAward> awards = portfolioAwardRepository.findByPortfolio(portfolio);
+        List<PortfolioCareer> careers = portfolioCareerRepository.findByPortfolio(portfolio);
+
+        // ✅ 컨버터를 활용하여 DTO 변환 후 반환
+        return PortfolioConverter.toPortfolioResponse(portfolio, links, educations, awards, careers);
+    }
+
 }

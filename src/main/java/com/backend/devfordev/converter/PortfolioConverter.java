@@ -233,7 +233,7 @@ public class PortfolioConverter {
                         CertificationAward certAward = (CertificationAward) award;
                         return new PortfolioResponse.PortCreateResponse.AwardResponse.CertificateAwardResponse(
                                 certAward.getId(),
-                                AwardType.CERTIFICATE,
+                                AwardType.CERTIFICATION,
                                 certAward.getOrderIndex(),
                                 certAward.getCertificationName(),
                                 certAward.getIssuingInstitution(),
@@ -318,4 +318,6 @@ public class PortfolioConverter {
         );
 
     }
+
+
 }
