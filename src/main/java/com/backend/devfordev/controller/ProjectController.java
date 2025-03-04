@@ -19,6 +19,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Tag(name = "프로젝트 API")
 @RequiredArgsConstructor
 @RestController
@@ -72,4 +74,13 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 
+    @Operation(summary = "작성자의 다른 프로젝트 조회", description = "현재 프로젝트를 제외한 작성자의 다른 프로젝트 리스트를 조회합니다.")
+    @GetMapping("/v1/project/{projectId}/other-projects")
+    public ResponseEntity<ApiResponse<List<ProjectResponse.OtherProjectResponse>>> getOtherProjects(
+            @PathVariable Long projectId) {
+
+        List<ProjectResponse.OtherProjectResponse> otherProjects = projectService.getOtherProjects(projectId);
+        ApiResponse<List<ProjectResponse.OtherProjectResponse>> apiResponse = ApiResponse.onSuccess(otherProjects);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
 }
