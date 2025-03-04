@@ -1,12 +1,14 @@
 package com.backend.devfordev.security;
 
+import com.backend.devfordev.repository.MemberRepository.MemberRefreshTokenRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import com.backend.devfordev.domain.MemberEntity.MemberRefreshToken;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class TokenProvider {
 
     private final JwtProperties jwtProperties;
+    private final MemberRefreshTokenRepository memberRefreshTokenRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 토큰 생성 메서드
@@ -58,12 +61,18 @@ public class TokenProvider {
                 .compact();
     }
 
-    // 액세스 토큰 재발급 메서드
+    @Transactional
     public String recreateAccessToken(String oldAccessToken) throws JsonProcessingException {
         String subject = decodeJwtPayloadSubject(oldAccessToken);
+        long reissueLimit = jwtProperties.getReissueLimit();
+        //long reissueLimit = jwtProperties.getRefreshExpirationDays()* 60 / jwtProperties.getExpirationMinutes();
+        memberRefreshTokenRepository.findByMemberIdAndReissueCountLessThan(Long.valueOf(subject.split(":")[0]), reissueLimit)
+                .ifPresentOrElse(
+                        MemberRefreshToken::increaseReissueCount,
+                        () -> { throw new ExpiredJwtException(null, null, "Refresh token expired."); }
+                );
         return createAccessToken(subject);
     }
-
 
     public void validateRefreshToken(String refreshToken, String oldAccessToken) throws JsonProcessingException {
         validateAndParseToken(refreshToken);

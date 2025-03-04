@@ -7,6 +7,7 @@ build/
 !**/src/main/resources/
 *.yml
 *.json
+.env
 
 ### STS ###
 .apt_generated

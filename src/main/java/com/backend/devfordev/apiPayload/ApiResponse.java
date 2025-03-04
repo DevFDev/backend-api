@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
@@ -41,5 +42,13 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> ofFailure(BaseErrorCode code, T result) {
         return new ApiResponse<>(false, code.getReasonHttpStatus().getCode(), code.getReasonHttpStatus().getMessage(), result);
+    }
+
+    @Builder
+    public ApiResponse(final T result, final Boolean isSuccess, final String code, final String message){
+        this.result = result;
+        this.isSuccess = isSuccess;
+        this.code = code;
+        this.message = message;
     }
 }

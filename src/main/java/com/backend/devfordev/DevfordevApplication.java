@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.bind.annotation.RestController;
 
-
+@EnableJpaAuditing
 @SpringBootApplication
 public class DevfordevApplication {
 
