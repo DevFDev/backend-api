@@ -144,7 +144,7 @@ public class ProjectResponse {
 
         @Schema(description = "프로젝트  제목", example = "김민지의 프로젝트 ~~")
         String projectTitle;
-//        @Schema(description = "프로젝트 내용", example = "프로젝트 내용~~")
+        //        @Schema(description = "프로젝트 내용", example = "프로젝트 내용~~")
 //        String projectContent;
 //        @NotNull(message = "This field must not be null.")
 //        @Schema(description = "프로젝트 개요", example = "프로젝트 개요~~")
@@ -154,7 +154,7 @@ public class ProjectResponse {
 
         @Schema(description = "태그", example = "[\"태그1\", \"태그2\", \"태그3\"]")
         List<String> tags;
-//        @Schema(description = "기술 스택", example = "[\"Java\", \"Spring\", \"AWS\"]")
+        //        @Schema(description = "기술 스택", example = "[\"Java\", \"Spring\", \"AWS\"]")
 //        List<String> projectTechStacks;
         @Schema(description = "프로젝트 이미지 url", example = "이미지url")
         String projectImageUrl;
@@ -171,7 +171,11 @@ public class ProjectResponse {
         @Schema(description = "좋아요수", example = "0")
         Long likes;
 
-
+    }
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class OtherProjectResponse {
         @Schema(description = "프로젝트 ID", example = "1")
         Long id;

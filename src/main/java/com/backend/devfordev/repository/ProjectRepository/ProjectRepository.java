@@ -26,6 +26,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             Pageable pageable
     );
 
+
     @Query("SELECT p, COUNT(h), mi FROM Project p " +
             "LEFT JOIN p.member m " +
             "LEFT JOIN MemberInfo mi ON mi.member = m " +
@@ -38,6 +39,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             @Param("searchTerm") String searchTerm,
             Pageable pageable
     );
+
 
 
     @Query("SELECT p, COUNT(h), mi FROM Project p " +
