@@ -28,9 +28,11 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
 
 @Tag(name = "프로젝트 API")
 @RequiredArgsConstructor
@@ -85,6 +87,7 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 
+
     @Operation(summary = "프로젝트 게시글 전체 조회", description = "프로젝트 게시글 조회 API (검색, 필터링, 정렬, 페이징 적용).")
     @GetMapping(value = "/v1/project")
     public ResponseEntity<ApiResponse<CustomPageResponse<ProjectResponse.ProjectListResponse>>> getProjectList(
@@ -106,5 +109,16 @@ public class ProjectController {
     }
 
 
+
+
+    @Operation(summary = "작성자의 다른 프로젝트 조회", description = "현재 프로젝트를 제외한 작성자의 다른 프로젝트 리스트를 조회합니다.")
+    @GetMapping("/v1/project/{projectId}/other-projects")
+    public ResponseEntity<ApiResponse<List<ProjectResponse.OtherProjectResponse>>> getOtherProjects(
+            @PathVariable Long projectId) {
+
+        List<ProjectResponse.OtherProjectResponse> otherProjects = projectService.getOtherProjects(projectId);
+        ApiResponse<List<ProjectResponse.OtherProjectResponse>> apiResponse = ApiResponse.onSuccess(otherProjects);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
 
 }

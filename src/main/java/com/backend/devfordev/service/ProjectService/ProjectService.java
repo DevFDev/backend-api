@@ -10,7 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+
 import java.util.Optional;
+
+
 
 public interface ProjectService {
     public ProjectResponse.ProjectCreateResponse createProject(ProjectRequest.ProjectCreateRequest request, Long userId, MultipartFile portImage);
@@ -19,10 +22,14 @@ public interface ProjectService {
     public void deleteProject(Long projectId, Long userId);
 
 
+
     public CustomPageResponse<ProjectResponse.ProjectListResponse> getProjectList(
             Optional<ProjectCategory> categoryOpt,
             Optional<String> searchTermOpt,
             String sortBy,
             Pageable pageable
     );
+
+    public List<ProjectResponse.OtherProjectResponse> getOtherProjects(Long currentProjectId);
+
 }

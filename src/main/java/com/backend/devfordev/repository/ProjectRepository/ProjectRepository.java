@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+
     @Query("SELECT p, COUNT(h) FROM Project p " +
             "LEFT JOIN Heart h ON p.id = h.likeId AND h.likeType = :likeType " +
             "WHERE (:category IS NULL OR p.projectCategory = :category) " +
@@ -60,8 +61,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
 
 
-
-
-
+    // 특정 작성자의 다른 프로젝트 조회 (현재 프로젝트 제외)
+    @Query("SELECT p FROM Project p WHERE p.member.id = :memberId AND p.id <> :currentProjectId ORDER BY p.createdAt DESC")
+    List<Project> findOtherProjectsByMember(@Param("memberId") Long memberId, @Param("currentProjectId") Long currentProjectId);
 
 }

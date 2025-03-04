@@ -52,16 +52,16 @@ public class TeamController {
             @RequestParam(defaultValue = "recent") String sortBy,
             @RequestParam(required = false) Boolean teamIsActive) {
 
-            List<TeamResponse.TeamListResponse> teamList = teamService.getTeamList(
-                    Optional.ofNullable(searchTerm),
-                    Optional.ofNullable(teamType),
-                    positions != null ? positions : Collections.emptyList(),
-                    techStacks != null ? techStacks : Collections.emptyList(),
-                    sortBy,
-                    Optional.ofNullable(teamIsActive)
-            );
+        List<TeamResponse.TeamListResponse> teamList = teamService.getTeamList(
+                Optional.ofNullable(searchTerm),
+                Optional.ofNullable(teamType),
+                positions != null ? positions : Collections.emptyList(),
+                techStacks != null ? techStacks : Collections.emptyList(),
+                sortBy,
+                Optional.ofNullable(teamIsActive)
+        );
 
-            ApiResponse<List<TeamResponse.TeamListResponse>> apiResponse = ApiResponse.onSuccess(teamList);
+        ApiResponse<List<TeamResponse.TeamListResponse>> apiResponse = ApiResponse.onSuccess(teamList);
 
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
 
@@ -97,8 +97,8 @@ public class TeamController {
 
     @Operation(summary = "팀 모집글 삭제", description = "팀 모집글을 삭제하는 api입니다. 작성자만 해당 기능을 사용할 수 있습니다.")
     @DeleteMapping(value = "/v1/team/{teamId}")
-    public ResponseEntity<ApiResponse> deleteTeam(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        teamService.deleteTeam(id, Long.parseLong(user.getUsername()));
+    public ResponseEntity<ApiResponse> deleteTeam(@PathVariable Long teamId, @AuthenticationPrincipal User user) {
+        teamService.deleteTeam(teamId, Long.parseLong(user.getUsername()));
         ApiResponse apiResponse = ApiResponse.builder()
                 .isSuccess(SuccessStatus._OK.getReason().getIsSuccess())
                 .code(SuccessStatus._OK.getCode())
@@ -111,8 +111,8 @@ public class TeamController {
     @Operation(summary = "멤버 리스트 검색", description = "전체 유저 리스트를 검색하는 api입니다. 닉네임으로 검색할 수 있습니다. 작성자만 해당 기능을 사용할 수 있습니다.")
     @GetMapping("/v1/team/{teamId}/search-members")
     public ResponseEntity<ApiResponse<List<CommunityResponse.MemberInfo>>> searchMembers(@RequestParam(required = false) String nickname,
-                                                     @PathVariable Long teamId,
-                                                     @AuthenticationPrincipal User user) {
+                                                                                         @PathVariable Long teamId,
+                                                                                         @AuthenticationPrincipal User user) {
         List<CommunityResponse.MemberInfo> members = teamService.searchMembersByNickname(nickname, Long.parseLong(user.getUsername()), teamId);
         ApiResponse<List<CommunityResponse.MemberInfo>> apiResponse = ApiResponse.onSuccess(members);
 

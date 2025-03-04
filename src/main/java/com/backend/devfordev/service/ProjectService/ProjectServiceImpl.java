@@ -32,6 +32,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
+
+
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -210,4 +212,19 @@ public class ProjectServiceImpl implements ProjectService{
 
 
 
+    @Override
+    @Transactional
+    public List<ProjectResponse.OtherProjectResponse> getOtherProjects(Long currentProjectId) {
+        // 현재 프로젝트를 찾음
+        Project project = projectRepository.findById(currentProjectId)
+                .orElseThrow(() -> new ProjectHandler(ErrorStatus.PROJECT_NOT_FOUND));
+
+        // 작성자의 다른 프로젝트 조회
+        List<Project> otherProjects = projectRepository.findOtherProjectsByMember(project.getMember().getId(), currentProjectId);
+
+        // 변환 후 반환
+        return otherProjects.stream()
+                .map(ProjectConverter::toOtherProjectResponse)
+                .collect(Collectors.toList());
+    }
 }
