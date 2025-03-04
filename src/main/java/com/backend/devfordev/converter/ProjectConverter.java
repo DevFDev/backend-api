@@ -162,4 +162,15 @@ public class ProjectConverter {
         );
     }
 
+    public static ProjectResponse.OtherProjectResponse toOtherProjectResponse(Project project) {
+        return ProjectResponse.OtherProjectResponse.builder()
+                .id(project.getId())
+                .projectTitle(project.getProjectTitle())
+                .projectCategory(project.getProjectCategory())
+                .projectTechStacks(project.getProTechStacks())
+                .projectImageUrl(project.getProjectImageUrl())
+                .createdAt(project.getCreatedAt())
+                .build();
+    }
+
 }

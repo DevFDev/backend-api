@@ -129,4 +129,27 @@ public class ProjectResponse {
         private List<ProjectResponse.ProjectCreateResponse.LinkResponse> links; // 링크 리스트 추가
 
     }
+
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OtherProjectResponse {
+        @Schema(description = "프로젝트 ID", example = "1")
+        Long id;
+        @Schema(description = "프로젝트  제목", example = "김민지의 프로젝트 ~~")
+        String projectTitle;
+
+        @Schema(description = "프로젝트 분류", example = "APP")
+        ProjectCategory projectCategory;
+
+        @Schema(description = "기술 스택", example = "[\"Java\", \"Spring\", \"AWS\"]")
+        List<String> projectTechStacks;
+        @Schema(description = "프로젝트 이미지 url", example = "이미지url")
+        String projectImageUrl;
+        @Schema(description = "작성시간", example = "2024-11-19T00:52:47.534061")
+        LocalDateTime createdAt;
+
+    }
 }
