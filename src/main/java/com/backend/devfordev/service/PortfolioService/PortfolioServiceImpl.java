@@ -2,13 +2,14 @@ package com.backend.devfordev.service.PortfolioService;
 
 import com.backend.devfordev.apiPayload.code.status.ErrorStatus;
 
-import com.backend.devfordev.apiPayload.exception.handler.MemberHandler;
+import com.backend.devfordev.apiPayload.exception.handler.*;
 
 import com.backend.devfordev.converter.PortfolioConverter;
 
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.PortfolioEntity.*;
+import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioRequest;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioResponse;
@@ -160,5 +161,23 @@ public class PortfolioServiceImpl implements PortfolioService{
         return portList;
     }
 
+    @Override
+    @Transactional
+    public void deletePortfolio(Long portId, Long userId) {
+        Portfolio portfolio = portfolioRepository.findById(portId)
+                .orElseThrow(() -> new PortfolioHandler(ErrorStatus.PORTFOLIO_NOT_FOUND));
 
+        if (portfolio.getDeletedAt() != null) {
+            throw new PortfolioHandler(ErrorStatus.PORTFOLIO_DELETED);
+        }
+
+
+        if (!portfolio.getMember().getId().equals(userId)) {
+            throw new PortfolioHandler(ErrorStatus.UNAUTHORIZED_USER);
+        }
+
+        portfolio.deleteSoftly();
+
+        portfolioRepository.save(portfolio);
+    }
 }
