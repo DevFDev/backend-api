@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface PortfolioService {
     public PortfolioResponse.PortCreateResponse createPortfolio(PortfolioRequest.PortfolioCreateRequest request, Long userId, MultipartFile portImage);
     public List<PortfolioResponse.PortfolioListResponse> getPortList(String position, Optional<String> searchTermOpt, String sortBy);
+
+    public void deletePortfolio(Long portId, Long userId);
 }

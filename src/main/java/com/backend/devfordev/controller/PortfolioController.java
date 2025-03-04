@@ -2,6 +2,7 @@ package com.backend.devfordev.controller;
 
 
 import com.backend.devfordev.apiPayload.ApiResponse;
+import com.backend.devfordev.apiPayload.code.status.SuccessStatus;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioRequest;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioResponse;
 import com.backend.devfordev.service.PortfolioService.PortfolioService;
@@ -61,4 +62,18 @@ public class PortfolioController {
 
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
+
+    @Operation(summary = "포트폴리오 삭제", description = "포트폴리오를 삭제하는 api입니다. 작성자만 해당 기능을 사용할 수 있습니다.")
+    @DeleteMapping(value = "/v1/portfolio/{portId}")
+    public ResponseEntity<ApiResponse> deletePortfolio(@PathVariable Long portId, @AuthenticationPrincipal User user) {
+        portfolioService.deletePortfolio(portId, Long.parseLong(user.getUsername()));
+        ApiResponse apiResponse = ApiResponse.builder()
+                .isSuccess(SuccessStatus._OK.getReason().getIsSuccess())
+                .code(SuccessStatus._OK.getCode())
+                .message("포트폴리오가 성공적으로 삭제되었습니다.")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
+
 }
