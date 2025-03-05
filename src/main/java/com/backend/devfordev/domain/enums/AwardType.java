@@ -5,5 +5,4 @@ public enum AwardType {
     CERTIFICATION, // 자격증
     LANGUAGE,    // 어학
     ACTIVITY;    // 대외활동
-
 }

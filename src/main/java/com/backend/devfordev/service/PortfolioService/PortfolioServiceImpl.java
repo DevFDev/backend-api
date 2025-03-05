@@ -13,6 +13,7 @@ import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioRequest;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioResponse;
+import com.backend.devfordev.repository.LikeRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.PortfolioRepository.*;
@@ -37,6 +38,7 @@ public class PortfolioServiceImpl implements PortfolioService{
     private final MemberInfoRepository memberInfoRepository;
     private final PortfolioCareerRepository portfolioCareerRepository;
     private final S3Service s3Service;
+    private final LikeRepository likeRepository;
     @Override
     @Transactional
     public PortfolioResponse.PortCreateResponse createPortfolio(PortfolioRequest.PortfolioCreateRequest request, Long userId, MultipartFile portImage) {
@@ -183,10 +185,16 @@ public class PortfolioServiceImpl implements PortfolioService{
 
     @Override
     @Transactional(readOnly = true)
-    public PortfolioResponse.PortCreateResponse getPortfolioDetail(Long portfolioId) {
+    public PortfolioResponse.PortDetailResponse getPortfolioDetail(Long portfolioId) {
         // ✅ 변경된 Repository 메서드 사용 (단일 객체 반환)
         Portfolio portfolio = portfolioRepository.findPortfolioById(portfolioId)
                 .orElseThrow(() -> new PortfolioHandler(ErrorStatus.PORTFOLIO_NOT_FOUND));
+
+        if (portfolio.getDeletedAt() != null) {
+            throw new PortfolioHandler(ErrorStatus.PORTFOLIO_DELETED);
+        }
+
+        Long Likecount = likeRepository.countByPortId(portfolioId);
 
         // ✅ 추가 정보 조회 (링크, 학력, 수상, 경력)
         List<PortfolioLink> links = portfolioLinkRepository.findByPortfolio(portfolio);
@@ -195,7 +203,7 @@ public class PortfolioServiceImpl implements PortfolioService{
         List<PortfolioCareer> careers = portfolioCareerRepository.findByPortfolio(portfolio);
 
         // ✅ 컨버터를 활용하여 DTO 변환 후 반환
-        return PortfolioConverter.toPortfolioResponse(portfolio, links, educations, awards, careers);
+        return PortfolioConverter.toPortDetailResponse(portfolio, links, educations, awards, careers, Likecount);
     }
 
 }

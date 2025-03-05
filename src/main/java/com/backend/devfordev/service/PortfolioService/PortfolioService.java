@@ -12,5 +12,5 @@ public interface PortfolioService {
     public List<PortfolioResponse.PortfolioListResponse> getPortList(String position, Optional<String> searchTermOpt, String sortBy);
 
     public void deletePortfolio(Long portId, Long userId);
-    public PortfolioResponse.PortCreateResponse getPortfolioDetail(Long portfolioId);
+    public PortfolioResponse.PortDetailResponse getPortfolioDetail(Long portfolioId);
 }
