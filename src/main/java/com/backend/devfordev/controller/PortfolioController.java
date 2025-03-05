@@ -77,11 +77,11 @@ public class PortfolioController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
     @Operation(summary = "포트폴리오 상세 조회", description = "포트폴리오 ID를 입력받아 상세 정보를 조회합니다.")
-    @GetMapping("/v1/portfolio/{portfolioId}")
+    @GetMapping("/v1/portfolio/{portId}")
     public ResponseEntity<ApiResponse<PortfolioResponse.PortDetailResponse>> getPortfolioDetail(
-            @PathVariable Long portfolioId) {
+            @PathVariable Long portId) {
 
-        PortfolioResponse.PortDetailResponse portfolioDetail = portfolioService.getPortfolioDetail(portfolioId);
+        PortfolioResponse.PortDetailResponse portfolioDetail = portfolioService.getPortfolioDetail(portId);
         ApiResponse<PortfolioResponse.PortDetailResponse> apiResponse = ApiResponse.onSuccess(portfolioDetail);
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
