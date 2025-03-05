@@ -5,6 +5,7 @@ import com.backend.devfordev.apiPayload.ApiResponse;
 import com.backend.devfordev.apiPayload.code.status.SuccessStatus;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioRequest;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioResponse;
+import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 import com.backend.devfordev.service.PortfolioService.PortfolioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -75,5 +76,13 @@ public class PortfolioController {
 
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
+    @Operation(summary = "포트폴리오 상세 조회", description = "포트폴리오 ID를 입력받아 상세 정보를 조회합니다.")
+    @GetMapping("/v1/portfolio/{portfolioId}")
+    public ResponseEntity<ApiResponse<PortfolioResponse.PortDetailResponse>> getPortfolioDetail(
+            @PathVariable Long portfolioId) {
 
+        PortfolioResponse.PortDetailResponse portfolioDetail = portfolioService.getPortfolioDetail(portfolioId);
+        ApiResponse<PortfolioResponse.PortDetailResponse> apiResponse = ApiResponse.onSuccess(portfolioDetail);
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
 }

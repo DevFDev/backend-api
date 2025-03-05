@@ -184,6 +184,127 @@ public class PortfolioConverter {
 
 
 
+    public static PortfolioResponse.PortDetailResponse toPortDetailResponse(
+            Portfolio portfolio,
+            List<PortfolioLink> links,
+            List<PortfolioEducation> educations,
+            List<PortfolioAward> awards,
+            List<PortfolioCareer> careers,
+            Long Likecount
+    ) {
+        List<PortfolioResponse.PortDetailResponse.LinkResponse> linkResponses = links.stream()
+                .map(link -> new PortfolioResponse.PortDetailResponse.LinkResponse(
+                        link.getType(),
+                        link.getUrl(),
+                        link.getOrderIndex()
+                ))
+                .collect(Collectors.toList());
+
+        List<PortfolioResponse.PortDetailResponse.EducationResponse> educationResponses = educations.stream()
+                .map(education -> new PortfolioResponse.PortDetailResponse.EducationResponse(
+                        education.getId(),
+                        education.getLevel(),
+                        education.getInstitutionName(),
+                        education.getMajor(),
+                        education.getAdmissionDate(),
+                        education.getGraduationDate(),
+                        education.getGraduationStatus(),
+                        education.getIsTransfer(),
+                        education.getGrade(),
+                        education.getGradeScale(),
+                        education.getOrderIndex()
+                ))
+                .collect(Collectors.toList());
+
+        // Award Responses - 각 Award Type별로 구체적인 Response 생성
+        List<PortfolioResponse.PortDetailResponse.AwardResponse> awardResponses = awards.stream()
+                .map(award -> {
+
+                    if (award instanceof CompetitionAward) {
+                        CompetitionAward compAward = (CompetitionAward) award;
+                        return new PortfolioResponse.PortDetailResponse.AwardResponse.CompetitionAwardResponse(
+                                compAward.getId(),
+                                AwardType.COMPETITION,
+                                compAward.getOrderIndex(),
+                                compAward.getCompetitionName(),
+                                compAward.getHostingInstitution(),
+                                compAward.getCompetitionDate()
+                        );
+                    } else if (award instanceof CertificationAward) {
+                        CertificationAward certAward = (CertificationAward) award;
+                        return new PortfolioResponse.PortDetailResponse.AwardResponse.CertificateAwardResponse(
+                                certAward.getId(),
+                                AwardType.CERTIFICATION,
+                                certAward.getOrderIndex(),
+                                certAward.getCertificationName(),
+                                certAward.getIssuingInstitution(),
+                                certAward.getPassingDate()
+                        );
+                    } else if (award instanceof LanguageAward) {
+                        LanguageAward langAward = (LanguageAward) award;
+                        return new PortfolioResponse.PortDetailResponse.AwardResponse.LanguageAwardResponse(
+                                langAward.getId(),
+                                AwardType.LANGUAGE,
+                                langAward.getOrderIndex(),
+                                langAward.getLanguage(),
+                                langAward.getTestName(),
+                                langAward.getScore(),
+                                langAward.getObtainedDate()
+                        );
+                    } else if (award instanceof ActivityAward) {
+                        ActivityAward actAward = (ActivityAward) award;
+                        return new PortfolioResponse.PortDetailResponse.AwardResponse.ActivityAwardResponse(
+                                actAward.getId(),
+                                AwardType.ACTIVITY,
+                                actAward.getOrderIndex(),
+                                actAward.getActivityName(),
+                                actAward.getStartDate(),
+                                actAward.getEndDate()
+                        );
+                    } else {
+                        throw new IllegalArgumentException("Invalid award type: " + award.getAwardType());
+                    }
+                })
+                .collect(Collectors.toList());
+
+        List<PortfolioResponse.PortDetailResponse.CareerResponse> careerResponses = careers.stream()
+                .map(career -> new PortfolioResponse.PortDetailResponse.CareerResponse(
+                        career.getId(),
+                        career.getCompanyName(),
+                        career.getOrderIndex(),
+                        career.getPosition(),
+                        career.getStartDate(),
+                        career.getEndDate(),
+                        career.getIsCurrent(),
+                        career.getDescription()
+                ))
+                .collect(Collectors.toList());
+
+        // techStacks 문자열을 리스트로 변환하여 설정
+        List<String> techStacks = portfolio.getTechStacks() != null ? portfolio.getTechStacks() : new ArrayList<>();
+        List<String> tags = portfolio.getTags() != null ? portfolio.getTags() : new ArrayList<>();
+
+        return new PortfolioResponse.PortDetailResponse(
+                portfolio.getId(),
+                portfolio.getMember().getId(),
+                portfolio.getPortTitle(),
+                portfolio.getPortContent(),
+                portfolio.getPortPosition(),
+                techStacks,
+                tags,
+                portfolio.getPortImageUrl(),
+                portfolio.getCreatedAt(),
+                linkResponses,
+                educationResponses,
+                awardResponses,
+                careerResponses,
+                0L,
+                0L,
+                Likecount
+        );
+    }
+
+
     public static PortfolioResponse.PortCreateResponse toPortfolioResponse(
             Portfolio portfolio,
             List<PortfolioLink> links,
@@ -233,7 +354,7 @@ public class PortfolioConverter {
                         CertificationAward certAward = (CertificationAward) award;
                         return new PortfolioResponse.PortCreateResponse.AwardResponse.CertificateAwardResponse(
                                 certAward.getId(),
-                                AwardType.CERTIFICATE,
+                                AwardType.CERTIFICATION,
                                 certAward.getOrderIndex(),
                                 certAward.getCertificationName(),
                                 certAward.getIssuingInstitution(),
@@ -300,7 +421,6 @@ public class PortfolioConverter {
         );
     }
 
-
     public static PortfolioResponse.PortfolioListResponse toPorListResponse(Portfolio portfolio, CommunityResponse.MemberInfo member, Long likeCount) {
         List<String> tags = portfolio.getTags() != null ? portfolio.getTags() : new ArrayList<>();
 
@@ -318,4 +438,6 @@ public class PortfolioConverter {
         );
 
     }
+
+
 }

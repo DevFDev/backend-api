@@ -17,6 +17,9 @@ public interface LikeRepository extends JpaRepository<Heart, Long> {
     @Query("SELECT COUNT(h) FROM Heart h WHERE h.likeId = :communityId AND h.likeType = 'COMMUNITY'")
     Long countByCommunityId(Long communityId);
 
+    @Query("SELECT COUNT(h) FROM Heart h WHERE h.likeId = :portId AND h.likeType = 'PORTFOLIO'")
+    Long countByPortId(Long portId);
+
     @Query("SELECT h.likeId, COUNT(h) FROM Heart h " +
             "WHERE h.likeId IN :projectIds AND h.likeType = :likeType " +
             "GROUP BY h.likeId")
