@@ -10,6 +10,7 @@ import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.TeamEntity.*;
 import com.backend.devfordev.domain.enums.TeamType;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.dto.TeamDto.TeamRequest;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
 import com.backend.devfordev.repository.*;
@@ -17,6 +18,10 @@ import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.TeamRepository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +82,39 @@ public class TeamServiceImpl implements TeamService {
 
     }
 
+    public TeamResponse.TeamMemberListWithIdResponse getTeamMemberList(Long teamId) {
+        // 팀 조회
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new TeamHandler(ErrorStatus.TEAM_NOT_FOUND));
+
+        // 팀에 속한 모든 팀 멤버 조회
+        List<TeamMember> teamMembers = teamMemberRepository.findByTeamId(teamId);
+
+        // 각 팀원의 MemberInfo 및 TeamMemberListResponse 생성
+        List<TeamResponse.TeamMemberListResponse> memberResponses = teamMembers.stream()
+                .map(teamMember -> {
+                    Member member = memberRepository.findById(teamMember.getMember().getId())
+                            .orElseThrow(() -> new TeamHandler(ErrorStatus.MEMBER_NOT_FOUND));
+
+                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(member);
+                    CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
+                            member.getId(),
+                            memberInfoEntity.getImageUrl(),
+                            memberInfoEntity.getNickname()
+                    );
+
+                    return TeamResponse.TeamMemberListResponse.builder()
+                            //.id(teamMember.getId())
+                            .member(memberInfo)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 컨버터 호출 (팀 ID와 멤버 리스트 전달)
+        return TeamConverter.toTeamMemberListResponse(team.getId(), memberResponses);
+    }
+
+
     @Transactional
     @Override
     public void closeRecruitment(Long teamId, Long userId) {
@@ -92,91 +130,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
 
-    @Override
-    @Transactional
-    public List<TeamResponse.TeamListResponse> getTeamList(Optional<String> searchTermOpt, Optional<TeamType> teamTypeOpt, List<String> positions, List<String> techStacks, String sortBy, Optional<Boolean> teamIsActive) {
 
-        List<Object[]> results = teamRepository.findAllWithLikesAndMember();
-
-        List<TeamResponse.TeamListResponse> teamList = results.stream()
-                .map(result -> {
-                    Team team = (Team) result[0];
-                    Long likeCount = (Long) result[1];
-
-
-                    // 모집 여부 필터링
-                    if (teamIsActive.isPresent()) {
-                        boolean isRecruiting = teamIsActive.get();
-                        if ((isRecruiting && !team.getTeamIsActive()) ||
-                                (!isRecruiting && team.getTeamIsActive())) {
-                            return null;
-                        }
-                    }
-
-                    if (teamTypeOpt.isPresent() && !team.getTeamType().equals(teamTypeOpt.get())) {
-                        return null;
-                    }
-
-
-                    // `teamPosition` filter
-                    if (!positions.isEmpty() && positions.stream().noneMatch(pos -> team.getTeamPosition().contains(pos))) {
-                        return null;
-                    }
-
-                    // `teamTechStack` filter
-                    List<String> teamStackNames = team.getTeamTechStacks().stream()
-                            .map(TeamTechStack::getName)
-                            .collect(Collectors.toList());
-                    if (!techStacks.isEmpty() && techStacks.stream().noneMatch(teamStackNames::contains)) {
-                        return null;
-                    }
-
-                    // Search term filtering
-                    if (searchTermOpt.isPresent()) {
-                        String searchTerm = searchTermOpt.get().toLowerCase();
-                        boolean matches = team.getTeamTitle().toLowerCase().contains(searchTerm) ||
-                                team.getMember().getName().toLowerCase().contains(searchTerm) ||
-                                team.getTeamContent().toLowerCase().contains(searchTerm);
-                        if (!matches) {
-                            return null;
-                        }
-                    }
-                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(team.getMember());
-
-
-                    // Construct MemberInfo
-                    CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
-                            team.getMember().getId(),
-                            memberInfoEntity.getImageUrl(),
-                            memberInfoEntity.getNickname()
-                    );
-
-                    // Shortened content
-                    String shortenedContent = team.getTeamContent();
-                    if (shortenedContent.length() > 80) {
-                        shortenedContent = shortenedContent.substring(0, 80) + "...";
-                    }
-
-                    return TeamConverter.toTeamListResponse(team, memberInfo, likeCount, shortenedContent);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        // Sorting
-        switch (sortBy.toLowerCase()) {
-            case "likes":
-                teamList.sort(Comparator.comparingLong(TeamResponse.TeamListResponse::getLikes).reversed());
-                break;
-            case "views":
-                teamList.sort(Comparator.comparingLong(TeamResponse.TeamListResponse::getViews).reversed());
-                break;
-            default:
-                teamList.sort(Comparator.comparing(TeamResponse.TeamListResponse::getCreatedAt).reversed());
-                break;
-        }
-
-        return teamList;
-    }
 
 
     @Override
@@ -297,37 +251,65 @@ public class TeamServiceImpl implements TeamService {
         return TeamConverter.toTeamMemberResponse(teamMember, team, memberToInvite);
     }
 
-    public TeamResponse.TeamMemberListWithIdResponse getTeamMemberList(Long teamId) {
-        // 팀 조회
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new TeamHandler(ErrorStatus.TEAM_NOT_FOUND));
+    @Override
+    @Transactional(readOnly = true)
+    public CustomPageResponse<TeamResponse.TeamListResponse> getTeamList(
+            Optional<String> searchTermOpt,
+            Optional<TeamType> teamTypeOpt,
+            List<String> positions,
+            List<String> techStacks,
+            String sortBy,
+            Optional<Boolean> teamIsActiveOpt,
+            Pageable pageable
+    ) {
+        // ✅ 정렬 설정
+        Sort sort;
+        switch (sortBy.toLowerCase()) {
+            case "likes" -> sort = Sort.by(Sort.Order.desc("likeCount"));
+            case "views" -> sort = Sort.by(Sort.Order.desc("teamViews"));
+            default -> sort = Sort.by(Sort.Order.desc("createdAt"));
+        }
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 팀에 속한 모든 팀 멤버 조회
-        List<TeamMember> teamMembers = teamMemberRepository.findByTeamId(teamId);
+        // ✅ 빈 리스트를 NULL로 변환하여 전달
+        List<String> validPositions = (positions == null || positions.isEmpty()) ? null : positions;
+        List<String> validTechStacks = (techStacks == null || techStacks.isEmpty()) ? null : techStacks;
 
-        // 각 팀원의 MemberInfo 및 TeamMemberListResponse 생성
-        List<TeamResponse.TeamMemberListResponse> memberResponses = teamMembers.stream()
-                .map(teamMember -> {
-                    Member member = memberRepository.findById(teamMember.getMember().getId())
-                            .orElseThrow(() -> new TeamHandler(ErrorStatus.MEMBER_NOT_FOUND));
 
-                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(member);
-                    CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
-                            member.getId(),
-                            memberInfoEntity.getImageUrl(),
-                            memberInfoEntity.getNickname()
-                    );
+        // ✅ 팀 조회
+        Page<Object[]> results = teamRepository.findTeamsWithLikesAndMemberCount(
+                searchTermOpt.orElse(null),
+                teamTypeOpt.orElse(null),
+                positions.isEmpty() ? null : positions,
+                techStacks.isEmpty() ? null : techStacks,
+                teamIsActiveOpt.orElse(null),
+                pageable
+        );
 
-                    return TeamResponse.TeamMemberListResponse.builder()
-                            //.id(teamMember.getId())
-                            .member(memberInfo)
-                            .build();
-                })
-                .collect(Collectors.toList());
+        // ✅ 결과 변환
+        Page<TeamResponse.TeamListResponse> teamList = results.map(result -> {
+            Team team = (Team) result[0];
+            Long memberCount = (Long) result[2]; // ✅ 팀 멤버 수 추가
+            Long likeCount = (Long) result[1];
 
-        // 컨버터 호출 (팀 ID와 멤버 리스트 전달)
-        return TeamConverter.toTeamMemberListResponse(team.getId(), memberResponses);
+            MemberInfo memberInfoEntity = memberInfoRepository.findByMember(team.getMember());
+            CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
+                    team.getMember().getId(),
+                    memberInfoEntity.getImageUrl(),
+                    memberInfoEntity.getNickname()
+            );
+
+            String shortenedContent = team.getTeamContent().length() > 50
+                    ? team.getTeamContent().substring(0, 50) + "..."
+                    : team.getTeamContent();
+
+            return TeamConverter.toTeamListResponse(team, memberInfo, memberCount, likeCount, shortenedContent);
+        });
+
+        return new CustomPageResponse<>(teamList);
     }
+
+
 
 
     @Override

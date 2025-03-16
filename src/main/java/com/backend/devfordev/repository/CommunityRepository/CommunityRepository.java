@@ -2,6 +2,8 @@ package com.backend.devfordev.repository.CommunityRepository;
 
 import com.backend.devfordev.domain.CommunityEntity.Community;
 import com.backend.devfordev.domain.enums.CommunityCategory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -13,10 +15,16 @@ public interface CommunityRepository extends JpaRepository<Community, Long> {
     List<Community> findByCommunityCategory(CommunityCategory category);
 
 
-    @Query("SELECT c, (SELECT COUNT(h) FROM Heart h WHERE h.likeId = c.id AND h.likeType = 'COMMUNITY') as likeCount " +
-            "FROM Community c JOIN FETCH c.member " +
-            "WHERE c.deletedAt IS NULL")
-    List<Object[]> findAllWithLikesAndMember();
+    @Query("""
+    SELECT c, COUNT(h) 
+    FROM Community c
+    LEFT JOIN Heart h ON c.id = h.likeId AND h.likeType = 'COMMUNITY'
+    WHERE c.deletedAt IS NULL 
+    GROUP BY c
+""")
+    Page<Object[]> findAllWithLikesAndMember(Pageable pageable);
+
+
 
 
 
