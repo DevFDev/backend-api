@@ -9,4 +9,6 @@ import java.util.List;
 
 public interface PortfolioLinkRepository extends JpaRepository<PortfolioLink, Long> {
     List<PortfolioLink> findByPortfolio(Portfolio portfolio);
+    void deleteByPortfolio(Portfolio portfolio);
+
 }

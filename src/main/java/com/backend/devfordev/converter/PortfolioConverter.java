@@ -440,4 +440,157 @@ public class PortfolioConverter {
     }
 
 
+    /**
+     * ✅ 기존 Portfolio 객체 업데이트 (새로운 객체를 생성하지 않고, 필드만 변경)
+     */
+    public static void updatePortfolio(Portfolio portfolio, PortfolioRequest.PortfolioCreateRequest request, String imageUrl) {
+        portfolio.setPortTitle(request.getPortTitle());
+        portfolio.setPortContent(request.getPortContent());
+        portfolio.setPortPosition(request.getPortPosition());
+        portfolio.setPortImageUrl(imageUrl);
+        portfolio.setTechStacks(Collections.singletonList(String.join(",", request.getTechStacks())));
+        portfolio.setTags(Collections.singletonList(String.join(",", request.getTags())));
+    }
+
+    /**
+     * ✅ 기존 링크 데이터 업데이트
+     * 기존 ID가 있는 경우 업데이트, 없으면 새로 추가
+     */
+    public static List<PortfolioLink> updatePortfolioLinks(List<PortfolioRequest.PortfolioCreateRequest.LinkRequest> linkRequests, Portfolio portfolio) {
+        return linkRequests.stream()
+                .map(linkRequest -> PortfolioLink.builder()
+                        .type(linkRequest.getType())
+                        .url(linkRequest.getUrl())
+                        .portfolio(portfolio)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * ✅ 기존 학력 데이터 업데이트
+     * 기존 ID가 있는 경우 업데이트, 없으면 새로 추가
+     */
+    /**
+     * ✅ 기존 학력 데이터 업데이트
+     * 기존 ID가 있는 경우 업데이트, 없으면 새로 추가
+     */
+    public static List<PortfolioEducation> updateEducationList(
+            List<PortfolioRequest.PortfolioCreateRequest.EducationRequest> educationRequests,
+            Portfolio portfolio) {
+
+        List<PortfolioEducation> updatedEducationList = educationRequests.stream()
+                .map(educationRequest -> PortfolioEducation.builder()
+                        .level(educationRequest.getLevel())
+                        .institutionName(educationRequest.getInstitutionName())
+                        .major(educationRequest.getMajor())
+                        .admissionDate(educationRequest.getAdmissionDate())
+                        .graduationDate(educationRequest.getGraduationDate())
+                        .graduationStatus(educationRequest.getGraduationStatus())
+                        .isTransfer(Boolean.valueOf(educationRequest.getIsTransfer()))
+                        .grade(educationRequest.getGrade())
+                        .gradeScale(educationRequest.getGradeScale())
+                        .portfolio(portfolio) // Portfolio 연결
+                        .build())
+                .collect(Collectors.toList());
+
+        // ✅ orderIndex 자동 설정 (순서 지정)
+        for (int i = 0; i < updatedEducationList.size(); i++) {
+            updatedEducationList.get(i).setOrderIndex(i + 1);
+        }
+
+        return updatedEducationList;
+    }
+
+    /**
+     * ✅ 기존 수상 및 기타 데이터 업데이트
+     * 기존 ID가 있는 경우 업데이트, 없으면 새로 추가
+     */
+    public static List<PortfolioAward> updateAwardList(
+            List<PortfolioRequest.PortfolioCreateRequest.AwardRequest> awardRequests,
+            List<PortfolioAward> existingAwards,
+            Portfolio portfolio
+            // 기존 데이터
+    ) {
+        AtomicInteger index = new AtomicInteger(1);
+
+        return awardRequests.stream().map(awardRequest -> {
+            int orderIndex = index.getAndIncrement();
+
+            // ✅ 기존 데이터에서 동일한 타입과 내용을 가진 기존 엔티티 찾기
+            PortfolioAward existingAward = existingAwards.stream()
+                    .filter(a -> a.getAwardType().equals(awardRequest.getAwardType()))
+                    .findFirst()
+                    .orElse(null); // 없으면 null
+
+            Long awardId = (existingAward != null) ? existingAward.getId() : null; // 기존 ID 유지
+
+            if (awardRequest instanceof PortfolioRequest.PortfolioCreateRequest.AwardRequest.CompetitionAwardRequest req) {
+                return new CompetitionAward(
+                        awardId, // 기존 ID 유지
+                        orderIndex,
+                        req.getAwardType(),
+                        portfolio,
+                        req.getCompetitionName(),
+                        req.getHostingInstitution(),
+                        req.getCompetitionDate()
+                );
+            } else if (awardRequest instanceof PortfolioRequest.PortfolioCreateRequest.AwardRequest.CertificationAwardRequest req) {
+                return new CertificationAward(
+                        awardId, // 기존 ID 유지
+                        orderIndex,
+                        req.getAwardType(),
+                        portfolio,
+                        req.getCertificateName(),
+                        req.getIssuer(),
+                        req.getPassingDate()
+                );
+            } else if (awardRequest instanceof PortfolioRequest.PortfolioCreateRequest.AwardRequest.LanguageAwardRequest req) {
+                return new LanguageAward(
+                        awardId, // 기존 ID 유지
+                        orderIndex,
+                        req.getAwardType(),
+                        portfolio,
+                        req.getLanguage(),
+                        req.getTestName(),
+                        req.getScore(),
+                        req.getObtainedDate()
+                );
+            } else if (awardRequest instanceof PortfolioRequest.PortfolioCreateRequest.AwardRequest.ActivityAwardRequest req) {
+                return new ActivityAward(
+                        awardId, // 기존 ID 유지
+                        orderIndex,
+                        req.getAwardType(),
+                        portfolio,
+                        req.getActivityName(),
+                        req.getStartDate(),
+                        req.getEndDate()
+                );
+            }
+            throw new IllegalArgumentException("Invalid award type: " + awardRequest.getAwardType());
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * ✅ 기존 경력 데이터 업데이트
+     * 기존 ID가 있는 경우 업데이트, 없으면 새로 추가
+     */
+    public static List<PortfolioCareer> updateCareerList(List<PortfolioRequest.PortfolioCreateRequest.CareerRequest> careerRequests, Portfolio portfolio) {
+        AtomicInteger index = new AtomicInteger(1);
+        return careerRequests.stream()
+                .map(careerRequest -> PortfolioCareer.builder()
+                        //.id(careerRequest.getId()) // ID가 있으면 업데이트
+                        .companyName(careerRequest.getCompanyName())
+                        .position(careerRequest.getPosition())
+                        .startDate(careerRequest.getStartDate())
+                        .endDate(careerRequest.getEndDate())
+                        .isCurrent(careerRequest.getIsCurrent())
+                        .level(careerRequest.getLevel())
+                        .orderIndex(index.getAndIncrement())
+                        .description(careerRequest.getDescription())
+                        .portfolio(portfolio)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
 }
