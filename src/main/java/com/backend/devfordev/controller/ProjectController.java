@@ -6,9 +6,14 @@ import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.domain.enums.ProjectCategory;
 import com.backend.devfordev.domain.enums.TeamType;
 import com.backend.devfordev.dto.CustomPageResponse;
+import com.backend.devfordev.dto.PortfolioDto.PortfolioCommentRequest;
+import com.backend.devfordev.dto.PortfolioDto.PortfolioCommentResponse;
+import com.backend.devfordev.dto.ProjectDto.ProjectCommentRequest;
+import com.backend.devfordev.dto.ProjectDto.ProjectCommentResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
+import com.backend.devfordev.service.ProjectService.ProjectCommentService;
 import com.backend.devfordev.service.ProjectService.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +46,7 @@ import java.util.Optional;
 @Slf4j
 public class ProjectController {
     private final ProjectService projectService;
+    private final ProjectCommentService projectCommentService;
     @Operation(summary = "프로젝트 글 등록", description = "프로젝트 글을 등록하는 api입니다.")
     @PostMapping(value = "/v1/project",consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<ProjectResponse.ProjectCreateResponse>> createProject(@Valid @RequestPart("request") ProjectRequest.ProjectCreateRequest request, @AuthenticationPrincipal User user,
@@ -121,4 +127,29 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
 
+    @Operation(summary = "프로젝트 댓글 등록",
+            description = "프로젝트에 댓글 작성하는 API입니다. 작성자만 해당 기능을 사용할 수 있습니다. " +
+                    "최상위 댓글의 경우 parentId를 null로 보내주세요!")
+    @PostMapping("v1/project/{projectId}/comments")
+    public ResponseEntity<ApiResponse<ProjectCommentResponse>> createComment(
+            @PathVariable Long projectId,
+            @RequestBody @Valid ProjectCommentRequest request,
+            @AuthenticationPrincipal User user) {
+
+        ProjectCommentResponse response = projectCommentService.addComment(projectId, Long.parseLong(user.getUsername()), request);
+        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+    }
+
+    /**
+     * ✅ 포트폴리오 댓글 조회 API
+     */
+    @Operation(summary = "프로젝트 댓글 조회",
+            description = "특정 프로젝트의 댓글을 조회합니다. 댓글은 계층 구조로 반환됩니다.")
+    @GetMapping("v1/project/{projectId}/comments")
+    public ResponseEntity<ApiResponse<List<ProjectCommentResponse>>> getComments(
+            @PathVariable Long projectId) {
+
+        List<ProjectCommentResponse> responses = projectCommentService.getCommentsByProjectId(projectId);
+        return ResponseEntity.ok(ApiResponse.onSuccess(responses));
+    }
 }

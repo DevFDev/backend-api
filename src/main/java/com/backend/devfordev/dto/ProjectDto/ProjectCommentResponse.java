@@ -1,15 +1,19 @@
-package com.backend.devfordev.dto.CommunityDto;
+package com.backend.devfordev.dto.ProjectDto;
 
+import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 @Getter
 @Setter
 @Builder
-public class CommunityCommentResponse {
+public class ProjectCommentResponse {
 
     @Schema(description = "댓글 ID", example = "1")
     private Long commentId;
@@ -21,27 +25,12 @@ public class CommunityCommentResponse {
     private String content;
 
     @Schema(description = "작성자 ID", example = "1")
-    MemberInfo writer;
+    CommunityCommentResponse.MemberInfo writer;
 
     @Schema(description = "작성일시", example = "2024-12-01T12:34:56")
     private LocalDateTime createdAt;
 
     @Schema(description = "답글 리스트 (없을 경우 빈 리스트)", example = "[]")
-    private List<CommunityCommentResponse> replies;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MemberInfo {
-
-        @Schema(description = "멤버 id", example = "1")
-        private Long id;
-        @Schema(description = "프로필 사진 url", example = "domain 주소")
-        private String imageUrl;
-        @Schema(description = "멤버 이름", example = "김민지")
-        private String nickname;
-
-    }
+    private List<ProjectCommentResponse> replies;
 
 }

@@ -1,9 +1,12 @@
 package com.backend.devfordev.converter;
 
+import com.backend.devfordev.domain.CommunityEntity.CommunityComment;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.PortfolioEntity.*;
 import com.backend.devfordev.domain.enums.AwardType;
+import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.PortfolioDto.PortfolioCommentResponse;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioRequest;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioResponse;
 
@@ -592,5 +595,14 @@ public class PortfolioConverter {
                 .collect(Collectors.toList());
     }
 
+    public static PortfolioCommentResponse toPortfolioCommentResponse(PortfolioComment comment, CommunityCommentResponse.MemberInfo member) {
+        return PortfolioCommentResponse.builder()
+                .commentId(comment.getId())
+                .parentCommentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .content(comment.getCommentContent())
+                .writer(member)
+                .createdAt(comment.getCreatedAt())
+                .build();
+    }
 
 }

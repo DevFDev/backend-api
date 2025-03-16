@@ -1,9 +1,13 @@
 package com.backend.devfordev.converter;
 
 import com.backend.devfordev.domain.MemberEntity.Member;
+import com.backend.devfordev.domain.ProjectEntity.ProjectComment;
 import com.backend.devfordev.domain.TeamEntity.*;
 import com.backend.devfordev.domain.enums.TeamType;
+import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.ProjectDto.ProjectCommentResponse;
+import com.backend.devfordev.dto.TeamDto.TeamCommentResponse;
 import com.backend.devfordev.dto.TeamDto.TeamRequest;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
 
@@ -214,5 +218,16 @@ public class TeamConverter {
     public static TeamResponse.TeamMemberListWithIdResponse toTeamMemberListResponse(Long teamId, List<TeamResponse.TeamMemberListResponse> memberResponses) {
         return new TeamResponse.TeamMemberListWithIdResponse(teamId, memberResponses);
     }
+
+    public static TeamCommentResponse toTeamCommentResponse(TeamComment comment, CommunityCommentResponse.MemberInfo member) {
+        return TeamCommentResponse.builder()
+                .commentId(comment.getId())
+                .parentCommentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .content(comment.getCommentContent())
+                .writer(member)
+                .createdAt(comment.getCreatedAt())
+                .build();
+    }
+
 
 }

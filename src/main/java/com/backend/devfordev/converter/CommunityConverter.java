@@ -107,17 +107,19 @@ public class CommunityConverter {
     }
 
 
-    public static CommunityCommentResponse toCommunityCommentResponse(CommunityComment comment) {
+    public static CommunityCommentResponse toCommunityCommentResponse(CommunityComment comment, CommunityCommentResponse.MemberInfo member) {
         return CommunityCommentResponse.builder()
                 .commentId(comment.getId())
                 .parentCommentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .content(comment.getCommentContent())
-                .writer(comment.getMember().getId())
+                .writer(member)
                 .createdAt(comment.getCreatedAt())
 //                .replies(comment.getChildren().stream()
 //                        .map(CommunityConverter::toCommunityCommentResponse) // 답글도 재귀적으로 변환
 //                        .collect(Collectors.toList()))
                 .build();
     }
+
+
 
 }
