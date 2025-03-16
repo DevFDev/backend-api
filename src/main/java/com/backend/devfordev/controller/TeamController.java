@@ -6,8 +6,11 @@ import com.backend.devfordev.apiPayload.code.status.SuccessStatus;
 import com.backend.devfordev.domain.enums.TeamType;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
 import com.backend.devfordev.dto.CustomPageResponse;
+import com.backend.devfordev.dto.TeamDto.TeamCommentRequest;
+import com.backend.devfordev.dto.TeamDto.TeamCommentResponse;
 import com.backend.devfordev.dto.TeamDto.TeamRequest;
 import com.backend.devfordev.dto.TeamDto.TeamResponse;
+import com.backend.devfordev.service.TeamService.TeamCommentService;
 import com.backend.devfordev.service.TeamService.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +36,7 @@ import java.util.Optional;
 @Slf4j
 public class TeamController {
     private final TeamService teamService;
+    private final TeamCommentService teamCommentService;
 
     @Operation(summary = "팀 모집글 등록", description = "팀 모집 공고를 등록하는 api입니다.")
     @PostMapping(value = "/v1/team")
@@ -171,5 +175,30 @@ public class TeamController {
 
         TeamResponse.TeamUpdateResponse response = teamService.updateTeam(teamId, request, Long.parseLong(user.getUsername()));
         return ResponseEntity.ok(ApiResponse.onSuccess(response));
+    }
+
+
+    @Operation(summary = "팀 모집 댓글 등록",
+            description = "팀 모집글에 댓글 작성하는 API입니다. 작성자만 해당 기능을 사용할 수 있습니다. " +
+                    "최상위 댓글의 경우 parentId를 null로 보내주세요!")
+    @PostMapping("v1/team/{teamId}/comments")
+    public ResponseEntity<ApiResponse<TeamCommentResponse>> createComment(
+            @PathVariable Long teamId,
+            @RequestBody @Valid TeamCommentRequest request,
+            @AuthenticationPrincipal User user) {
+
+        TeamCommentResponse response = teamCommentService.addComment(teamId, Long.parseLong(user.getUsername()), request);
+        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+    }
+
+
+    @Operation(summary = "팀 모집 댓글 조회",
+            description = "특정 팀 모집글의 댓글을 조회합니다. 댓글은 계층 구조로 반환됩니다.")
+    @GetMapping("v1/team/{teamId}/comments")
+    public ResponseEntity<ApiResponse<List<TeamCommentResponse>>> getComments(
+            @PathVariable Long teamId) {
+
+        List<TeamCommentResponse> responses = teamCommentService.getCommentsByTeamId(teamId);
+        return ResponseEntity.ok(ApiResponse.onSuccess(responses));
     }
 }

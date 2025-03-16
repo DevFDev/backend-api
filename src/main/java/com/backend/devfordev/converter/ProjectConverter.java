@@ -1,9 +1,14 @@
 package com.backend.devfordev.converter;
 
 import com.backend.devfordev.domain.MemberEntity.Member;
+import com.backend.devfordev.domain.PortfolioEntity.PortfolioComment;
 import com.backend.devfordev.domain.ProjectEntity.Project;
+import com.backend.devfordev.domain.ProjectEntity.ProjectComment;
 import com.backend.devfordev.domain.ProjectEntity.ProjectLink;
+import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.PortfolioDto.PortfolioCommentResponse;
+import com.backend.devfordev.dto.ProjectDto.ProjectCommentResponse;
 import com.backend.devfordev.dto.ProjectDto.ProjectRequest;
 import com.backend.devfordev.dto.ProjectDto.ProjectResponse;
 
@@ -191,5 +196,16 @@ public class ProjectConverter {
                 .createdAt(project.getCreatedAt())
                 .build();
     }
+
+    public static ProjectCommentResponse toProjectCommentResponse(ProjectComment comment, CommunityCommentResponse.MemberInfo member) {
+        return ProjectCommentResponse.builder()
+                .commentId(comment.getId())
+                .parentCommentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .content(comment.getCommentContent())
+                .writer(member)
+                .createdAt(comment.getCreatedAt())
+                .build();
+    }
+
 
 }
