@@ -85,4 +85,26 @@ public class PortfolioController {
         ApiResponse<PortfolioResponse.PortDetailResponse> apiResponse = ApiResponse.onSuccess(portfolioDetail);
         return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
     }
+
+    @Operation(summary = "포트폴리오 수정", description = "포트폴리오를 수정하는 API입니다. (이미지 포함 가능)")
+    @PatchMapping(value = "/{portfolioId}", consumes = "multipart/form-data", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<PortfolioResponse.PortCreateResponse>> updatePortfolio(
+            @PathVariable Long portfolioId,
+            @Valid @RequestPart("request") PortfolioRequest.PortfolioCreateRequest request,
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.User user,
+            @RequestPart(value = "portImage", required = false) MultipartFile portImage
+    ) {
+
+        PortfolioResponse.PortCreateResponse updatedPortfolio = portfolioService.updatePortfolio(
+                portfolioId,
+                request,
+                Long.parseLong(user.getUsername()), // 현재 로그인한 사용자 ID
+                portImage
+        );
+
+
+        ApiResponse<PortfolioResponse.PortCreateResponse> apiResponse = ApiResponse.onSuccess(updatedPortfolio);
+
+        return ResponseEntity.status(HttpStatus.OK).body(apiResponse);
+    }
 }

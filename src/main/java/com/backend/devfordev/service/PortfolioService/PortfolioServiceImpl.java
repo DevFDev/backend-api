@@ -206,4 +206,53 @@ public class PortfolioServiceImpl implements PortfolioService{
         return PortfolioConverter.toPortDetailResponse(portfolio, links, educations, awards, careers, Likecount);
     }
 
+
+    @Transactional
+    @Override
+    public PortfolioResponse.PortCreateResponse updatePortfolio(Long portfolioId, PortfolioRequest.PortfolioCreateRequest request,  Long userId, MultipartFile portImage) {
+        // ✅ 포트폴리오 존재 여부 확인
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 포트폴리오가 존재하지 않습니다."));
+
+        // ✅ 작성자인지 확인
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new MemberHandler(ErrorStatus.INVALID_MEMBER));
+
+        String imageUrl;
+        try {
+            // 이미지 파일이 비어 있는지 확인
+            if (portImage == null || portImage.isEmpty()) {
+                // 기본 이미지 URL을 설정
+                imageUrl = s3Service.saveDefaultProfileImage();
+            } else {
+                // 이미지 업로드 후 URL 반환
+                imageUrl = s3Service.saveProfileImage(portImage);
+            }
+        } catch (IOException e) {
+            throw new MemberHandler(ErrorStatus.IMAGE_UPLOAD_FAILED);
+        }
+
+
+        // ✅ 기존 Portfolio 데이터 수정
+        PortfolioConverter.updatePortfolio(portfolio, request, imageUrl);
+
+        // ✅ 기존 데이터 삭제 후 새롭게 저장 (링크, 학력, 수상, 경력)
+        portfolioLinkRepository.deleteByPortfolio(portfolio);
+        portfolioEducationRepository.deleteByPortfolio(portfolio);
+        portfolioAwardRepository.deleteByPortfolio(portfolio);
+        portfolioCareerRepository.deleteByPortfolio(portfolio);
+        List<PortfolioAward> existingAwards = portfolioAwardRepository.findByPortfolio(portfolio);
+        List<PortfolioLink> links = PortfolioConverter.updatePortfolioLinks(request.getLinks(), portfolio);
+        List<PortfolioEducation> educations = PortfolioConverter.updateEducationList(request.getEducations(), portfolio);
+        List<PortfolioAward> awards = PortfolioConverter.updateAwardList(request.getAwards(), existingAwards, portfolio);
+        List<PortfolioCareer> careers = PortfolioConverter.updateCareerList(request.getCareers(), portfolio);
+
+        portfolioLinkRepository.saveAll(links);
+        portfolioEducationRepository.saveAll(educations);
+        portfolioAwardRepository.saveAll(awards);
+        portfolioCareerRepository.saveAll(careers);
+
+        return PortfolioConverter.toPortfolioResponse(portfolio, links, educations, awards, careers);
+    }
 }
+

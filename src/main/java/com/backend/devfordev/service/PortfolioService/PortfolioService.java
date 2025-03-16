@@ -13,4 +13,5 @@ public interface PortfolioService {
 
     public void deletePortfolio(Long portId, Long userId);
     public PortfolioResponse.PortDetailResponse getPortfolioDetail(Long portfolioId);
+    public PortfolioResponse.PortCreateResponse updatePortfolio(Long portfolioId, PortfolioRequest.PortfolioCreateRequest request,  Long userId, MultipartFile portImage);
 }

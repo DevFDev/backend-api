@@ -4,11 +4,13 @@ import com.backend.devfordev.domain.enums.AwardType;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Entity
 @Getter
+@Setter
 @DiscriminatorValue("ACTIVITY")
 public class ActivityAward extends PortfolioAward {
     private String activityName;
@@ -19,6 +21,7 @@ public class ActivityAward extends PortfolioAward {
     protected ActivityAward() {
         super();
     }
+
 
     public ActivityAward(Long id, Integer orderIndex, AwardType awardType, Portfolio portfolio,
                          String activityName, LocalDate startDate, LocalDate endDate) {
