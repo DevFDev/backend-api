@@ -13,12 +13,14 @@ import com.backend.devfordev.dto.CommunityDto.CommunityCommentRequest;
 import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
 import com.backend.devfordev.dto.CommunityDto.CommunityRequest;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.repository.*;
 import com.backend.devfordev.repository.CommunityRepository.CommunityCommentRepository;
 import com.backend.devfordev.repository.CommunityRepository.CommunityRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberInfoRepository;
 import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,23 +89,37 @@ public class CommunityServiceImpl implements CommunityService{
 
 
     @Override
-    @Transactional
-    public List<CommunityResponse.CommunityListResponse> getCommunityList(Optional<CommunityCategory> categoryOpt, Optional<String> searchTermOpt, String sortBy) {
-        // 커뮤니티와 좋아요 수를 한 번의 쿼리로 가져옴
-        List<Object[]> results = communityRepository.findAllWithLikesAndMember();
+    @Transactional(readOnly = true)
+    public CustomPageResponse<CommunityResponse.CommunityListResponse> getCommunityList(
+            Optional<CommunityCategory> categoryOpt,
+            Optional<String> searchTermOpt,
+            String sortBy,
+            Pageable pageable
+    ) {
+        // ✅ 정렬을 Pageable에서 설정
+        Sort sort;
+        switch (sortBy.toLowerCase()) {
+            case "likes" -> sort = Sort.by(Sort.Order.desc("likeCount"));
+            case "views" -> sort = Sort.by(Sort.Order.desc("communityViews"));
+            default -> sort = Sort.by(Sort.Order.desc("createdAt"));  // 기본값: 최신순
+        }
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        // 필터링 및 DTO 변환
-        List<CommunityResponse.CommunityListResponse> communityList = results.stream()
+        // ✅ 커뮤니티 조회 (Page<> 반환)
+        Page<Object[]> results = communityRepository.findAllWithLikesAndMember(pageable);
+
+        // ✅ 검색 및 필터링 적용 후 DTO 변환
+        List<CommunityResponse.CommunityListResponse> filteredList = results.stream()
                 .map(result -> {
-                    Community community = (Community) result[0];  // 첫 번째는 Community 객체
-                    Long likeCount = (Long) result[1];            // 두 번째는 좋아요 수
+                    Community community = (Community) result[0];
+                    Long likeCount = (Long) result[1];
 
-                    // 카테고리 필터링
+                    // ✅ 카테고리 필터링
                     if (categoryOpt.isPresent() && !community.getCommunityCategory().equals(categoryOpt.get())) {
                         return null;
                     }
 
-                    // 검색 필터링: 제목, 작성자 이름, 내용 중 하나라도 일치하면 true 반환
+                    // ✅ 검색 필터링: 제목, 작성자 이름, 내용 중 하나라도 포함되면 통과
                     if (searchTermOpt.isPresent()) {
                         String searchTerm = searchTermOpt.get().toLowerCase();
                         boolean matches = community.getCommunityTitle().toLowerCase().contains(searchTerm) ||
@@ -113,43 +129,33 @@ public class CommunityServiceImpl implements CommunityService{
                             return null;
                         }
                     }
-                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(community.getMember());
 
-                    // MemberInfo 생성
+                    // ✅ MemberInfo 조회 및 변환
+                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(community.getMember());
                     CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
                             community.getMember().getId(),
                             memberInfoEntity.getImageUrl(),
                             memberInfoEntity.getNickname()
                     );
 
-                    // communityContent를 80자까지만 잘라서 보여줌
+                    // ✅ CommunityContent 80자로 제한
                     String shortenedContent = community.getCommunityContent();
                     if (shortenedContent.length() > 80) {
-                        shortenedContent = shortenedContent.substring(0, 80) + "...";  // 80자까지만 자르고 "..." 추가
+                        shortenedContent = community.getCommunityContent().substring(0, 80) + "...";
                     }
 
-                    // DTO 변환
                     return CommunityConverter.toCommunityListResponse(community, memberInfo, likeCount, shortenedContent);
                 })
-                .filter(Objects::nonNull)  // 필터링에서 null이 반환된 경우 제거
-                .collect(Collectors.toList());
+                .filter(Objects::nonNull)  // 필터링된 null 값 제거
+                .collect(Collectors.toList());  // 리스트로 변환
 
-        // 정렬 기준에 따른 정렬
-        switch (sortBy.toLowerCase()) {
-            case "likes":   // 좋아요 순 정렬
-                communityList.sort(Comparator.comparingLong(CommunityResponse.CommunityListResponse::getLikes).reversed());
-                break;
-            case "views":   // 조회수 순 정렬
-                communityList.sort(Comparator.comparingLong(CommunityResponse.CommunityListResponse::getViews).reversed());
-                break;
-            case "recent":  // 최신순 정렬 (기본)
-            default:
-                communityList.sort(Comparator.comparing(CommunityResponse.CommunityListResponse::getCreatedAt).reversed());
-                break;
-        }
+        // ✅ 필터링된 결과를 다시 Page 객체로 변환
+        Page<CommunityResponse.CommunityListResponse> pagedResponse =
+                new PageImpl<>(filteredList, pageable, results.getTotalElements());
 
-        return communityList;
+        return new CustomPageResponse<>(pagedResponse);
     }
+
 
     @Override
     @Transactional
