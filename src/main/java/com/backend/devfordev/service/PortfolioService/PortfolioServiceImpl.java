@@ -11,6 +11,7 @@ import com.backend.devfordev.domain.MemberEntity.MemberInfo;
 import com.backend.devfordev.domain.PortfolioEntity.*;
 import com.backend.devfordev.domain.ProjectEntity.Project;
 import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CustomPageResponse;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioRequest;
 import com.backend.devfordev.dto.PortfolioDto.PortfolioResponse;
 import com.backend.devfordev.repository.LikeRepository;
@@ -19,6 +20,7 @@ import com.backend.devfordev.repository.MemberRepository.MemberRepository;
 import com.backend.devfordev.repository.PortfolioRepository.*;
 import com.backend.devfordev.service.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -104,23 +106,37 @@ public class PortfolioServiceImpl implements PortfolioService{
     }
 
     @Override
-    @Transactional
-    public List<PortfolioResponse.PortfolioListResponse> getPortList(String position, Optional<String> searchTermOpt, String sortBy) {
+    @Transactional(readOnly = true)
+    public CustomPageResponse<PortfolioResponse.PortfolioListResponse> getPortList(
+            String position,
+            Optional<String> searchTermOpt,
+            String sortBy,
+            Pageable pageable
+    ) {
+        // ✅ 정렬을 Pageable에서 설정
+        Sort sort;
+        switch (sortBy.toLowerCase()) {
+            case "likes" -> sort = Sort.by(Sort.Order.desc("likeCount"));
+            case "views" -> sort = Sort.by(Sort.Order.desc("portViews"));
+            default -> sort = Sort.by(Sort.Order.desc("createdAt"));  // 기본값: 최신순
+        }
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-        List<Object[]> results = portfolioRepository.findAllWithLikesAndMember();
+        // ✅ 포트폴리오 조회 (Page<> 반환)
+        Page<Object[]> results = portfolioRepository.findAllWithLikesAndMember(searchTermOpt, position, pageable);
 
-        // 필터링 및 DTO 변환
-        List<PortfolioResponse.PortfolioListResponse> portList = results.stream()
+        // ✅ 검색 및 필터링 적용 후 DTO 변환
+        List<PortfolioResponse.PortfolioListResponse> filteredList = results.stream()
                 .map(result -> {
-                    Portfolio portfolio = (Portfolio) result[0];  // 첫 번째는 Community 객체
-                    Long likeCount = (Long) result[1];            // 두 번째는 좋아요 수
+                    Portfolio portfolio = (Portfolio) result[0];
+                    Long likeCount = (Long) result[1];
 
-                    // 포지션 필터링
+                    // ✅ 포지션 필터링
                     if (position != null && !portfolio.getPortPosition().equalsIgnoreCase(position)) {
-                        return null; // 포지션이 일치하지 않을 경우 제외
+                        return null;
                     }
-                    // 카테고리 필터링
-                    // 검색 필터링: 제목, 작성자 이름, 내용 중 하나라도 일치하면 true 반환
+
+                    // ✅ 검색 필터링
                     if (searchTermOpt.isPresent()) {
                         String searchTerm = searchTermOpt.get().toLowerCase();
                         boolean matches = portfolio.getPortTitle().toLowerCase().contains(searchTerm) ||
@@ -130,38 +146,27 @@ public class PortfolioServiceImpl implements PortfolioService{
                             return null;
                         }
                     }
-                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(portfolio.getMember());
 
-                    // MemberInfo 생성
+                    // ✅ MemberInfo 조회 및 변환
+                    MemberInfo memberInfoEntity = memberInfoRepository.findByMember(portfolio.getMember());
                     CommunityResponse.MemberInfo memberInfo = new CommunityResponse.MemberInfo(
                             portfolio.getMember().getId(),
                             memberInfoEntity.getImageUrl(),
                             memberInfoEntity.getNickname()
                     );
 
-
-                    // DTO 변환
                     return PortfolioConverter.toPorListResponse(portfolio, memberInfo, likeCount);
                 })
-                .filter(Objects::nonNull)  // 필터링에서 null이 반환된 경우 제거
+                .filter(Objects::nonNull)  // 필터링된 null 값 제거
                 .collect(Collectors.toList());
 
-        // 정렬 기준에 따른 정렬
-        switch (sortBy.toLowerCase()) {
-            case "likes":   // 좋아요 순 정렬
-                portList.sort(Comparator.comparingLong(PortfolioResponse.PortfolioListResponse::getLikes).reversed());
-                break;
-            case "views":   // 조회수 순 정렬
-                portList.sort(Comparator.comparingLong(PortfolioResponse.PortfolioListResponse::getViews).reversed());
-                break;
-            case "recent":  // 최신순 정렬 (기본)
-            default:
-                portList.sort(Comparator.comparing(PortfolioResponse.PortfolioListResponse::getCreatedAt).reversed());
-                break;
-        }
+        // ✅ 필터링된 결과를 다시 Page 객체로 변환
+        Page<PortfolioResponse.PortfolioListResponse> pagedResponse =
+                new PageImpl<>(filteredList, pageable, results.getTotalElements());
 
-        return portList;
+        return new CustomPageResponse<>(pagedResponse);
     }
+
 
     @Override
     @Transactional
