@@ -275,12 +275,13 @@ public class TeamServiceImpl implements TeamService {
         List<String> validPositions = (positions == null || positions.isEmpty()) ? null : positions;
         List<String> validTechStacks = (techStacks == null || techStacks.isEmpty()) ? null : techStacks;
 
+
         // ✅ 팀 조회
-        Page<Object[]> results = teamRepository.findTeamsWithLikes(
+        Page<Object[]> results = teamRepository.findTeamsWithLikesAndMemberCount(
                 searchTermOpt.orElse(null),
                 teamTypeOpt.orElse(null),
-                validPositions,  // ✅ 빈 리스트가 아니라면 전달
-                validTechStacks,  // ✅ 빈 리스트가 아니라면 전달
+                positions.isEmpty() ? null : positions,
+                techStacks.isEmpty() ? null : techStacks,
                 teamIsActiveOpt.orElse(null),
                 pageable
         );
@@ -288,6 +289,7 @@ public class TeamServiceImpl implements TeamService {
         // ✅ 결과 변환
         Page<TeamResponse.TeamListResponse> teamList = results.map(result -> {
             Team team = (Team) result[0];
+            Long memberCount = (Long) result[2]; // ✅ 팀 멤버 수 추가
             Long likeCount = (Long) result[1];
 
             MemberInfo memberInfoEntity = memberInfoRepository.findByMember(team.getMember());
@@ -301,7 +303,7 @@ public class TeamServiceImpl implements TeamService {
                     ? team.getTeamContent().substring(0, 50) + "..."
                     : team.getTeamContent();
 
-            return TeamConverter.toTeamListResponse(team, memberInfo, likeCount, shortenedContent);
+            return TeamConverter.toTeamListResponse(team, memberInfo, memberCount, likeCount, shortenedContent);
         });
 
         return new CustomPageResponse<>(teamList);

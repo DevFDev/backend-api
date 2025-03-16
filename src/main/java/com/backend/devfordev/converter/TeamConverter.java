@@ -105,7 +105,7 @@ public class TeamConverter {
     }
 
     public static TeamResponse.TeamListResponse toTeamListResponse(
-        Team team, CommunityResponse.MemberInfo member, Long likeCount, String shortenedContent) {
+        Team team, CommunityResponse.MemberInfo member, Long memberCount, Long likeCount, String shortenedContent) {
 
         List<String> techStackNames = team.getTeamTechStacks().stream()
                 .map(TeamTechStack::getName)
@@ -123,6 +123,7 @@ public class TeamConverter {
                 team.getTeamType(),
                 team.getTeamPosition(),
                 Long.valueOf(team.getTeamRecruitmentNum()),
+                memberCount,
                 techStackNames,
                 tagNames,
                 team.getCreatedAt(),

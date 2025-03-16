@@ -57,6 +57,8 @@ public class TeamResponse {
         String teamPosition;
         @Schema(description = "팀 모집 인원", example = "1")
         Long teamRecruitmentNum;
+        @Schema(description = "팀 멤버 수", example = "1")
+        Long currentTeamNum;
         @Schema(description = "기술 스택", example = "[\"Java\", \"Spring\", \"AWS\"]")
         List<String> teamTechStack;
         @Schema(description = "태그", example = "[\"태그1\", \"태그2\", \"태그3\"]")
