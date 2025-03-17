@@ -1,13 +1,11 @@
 package com.backend.devfordev.converter;
 
 import com.backend.devfordev.domain.CommunityEntity.Community;
+import com.backend.devfordev.domain.CommunityEntity.CommunityAnswer;
 import com.backend.devfordev.domain.CommunityEntity.CommunityComment;
 import com.backend.devfordev.domain.MemberEntity.Member;
 import com.backend.devfordev.domain.enums.CommunityCategory;
-import com.backend.devfordev.dto.CommunityDto.CommunityCommentRequest;
-import com.backend.devfordev.dto.CommunityDto.CommunityCommentResponse;
-import com.backend.devfordev.dto.CommunityDto.CommunityRequest;
-import com.backend.devfordev.dto.CommunityDto.CommunityResponse;
+import com.backend.devfordev.dto.CommunityDto.*;
 
 import java.util.stream.Collectors;
 
@@ -118,6 +116,16 @@ public class CommunityConverter {
 //                        .map(CommunityConverter::toCommunityCommentResponse) // 답글도 재귀적으로 변환
 //                        .collect(Collectors.toList()))
                 .build();
+    }
+
+    public static CommunityAnswerResponse toCommunityAnswerResponse(CommunityAnswer answer, CommunityResponse.MemberInfo memberInfo) {
+        return new CommunityAnswerResponse(
+                answer.getId(),
+                answer.getCommunity().getId(),
+                memberInfo,
+                answer.getContent(),
+                answer.getCreatedAt()
+        );
     }
 
 
